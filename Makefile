@@ -46,8 +46,8 @@ $(BIN_DIR)/mcp-lint-ts: $(TS_SOURCES)
 	@echo "Building TypeScript checker..."
 	@mkdir -p $(BIN_DIR)
 	cd ts && npm run build
-	@printf '#!/bin/sh\nnode "$(CURDIR)/ts/dist/main.js" "$$@"\n' > $(BIN_DIR)/mcp-lint-ts
-	@chmod +x $(BIN_DIR)/mcp-lint-ts
+	cp ts/dist/mcp-lint-ts.cjs $(BIN_DIR)/mcp-lint-ts
+	chmod +x $(BIN_DIR)/mcp-lint-ts
 
 ts: $(BIN_DIR)/mcp-lint-ts
 
