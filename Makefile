@@ -2,7 +2,7 @@
 
 BIN_DIR := bin
 
-all: go rs ts
+all: go rs ts cpp
 
 # --- Go: MCP server + Go checker ---
 
@@ -54,6 +54,18 @@ ts: $(BIN_DIR)/mcp-lint-ts
 ts-test:
 	cd ts && npm test
 
+# --- C++ checker ---
+
+CPP_SOURCES := $(shell find cpp/src -name '*.cpp' -o -name '*.h' 2>/dev/null) cpp/CMakeLists.txt
+
+$(BIN_DIR)/mcp-lint-cpp: $(CPP_SOURCES)
+	@echo "Building C++ checker..."
+	@mkdir -p cpp/build $(BIN_DIR)
+	cd cpp/build && cmake -DCMAKE_BUILD_TYPE=Release .. && cmake --build . --parallel
+	cp cpp/build/mcp-lint-cpp $(BIN_DIR)/
+
+cpp: $(BIN_DIR)/mcp-lint-cpp
+
 # --- Install ---
 
 install: all
@@ -63,6 +75,7 @@ install: all
 	cp $(BIN_DIR)/mcp-lint-go ~/bin/
 	@test -f $(BIN_DIR)/mcp-lint-rs && cp $(BIN_DIR)/mcp-lint-rs ~/bin/ || true
 	@test -f $(BIN_DIR)/mcp-lint-ts && cp $(BIN_DIR)/mcp-lint-ts ~/bin/ || true
+	@test -f $(BIN_DIR)/mcp-lint-cpp && cp $(BIN_DIR)/mcp-lint-cpp ~/bin/ || true
 
 # --- Test ---
 
