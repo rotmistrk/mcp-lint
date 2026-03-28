@@ -1,0 +1,25 @@
+# Build output
+/bin/
+
+# Go
+*.exe
+*.test
+
+# Rust
+/rs/target/
+
+# TypeScript
+/ts/node_modules/
+/ts/dist/
+
+# C++
+/cpp/build/
+
+# Java
+/java/build/
+/java/.gradle/
+
+# IDE
+.idea/
+.vscode/
+*.swp

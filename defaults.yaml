@@ -1,0 +1,39 @@
+# Default lint configuration
+# Override per-project with .mcp-lint.yaml in project root
+
+max_method_length: 40
+max_nesting_depth: 3
+max_line_width: 120
+max_params: 7
+max_consecutive_same_type: 2
+
+# Language-specific overrides
+go:
+  forbid_panic: true
+  forbid_type_assertions: true
+
+rust:
+  forbid_unwrap: true
+  forbid_expect: true
+
+typescript:
+  forbid_any: true
+  forbid_class_components: true
+  forbid_wait_for_timeout: true
+
+cpp:
+  forbid_raw_new: true
+  forbid_c_casts: true
+
+java:
+  forbid_raw_types: true
+
+# Planned rules (require type resolution, not yet implemented)
+# These need full type checker context, not just AST:
+#
+# all languages:
+#   forbid_class_dependencies: true
+#     - Method/constructor params must be interfaces, not concrete classes
+#     - Fields should reference interfaces, not concrete classes
+#     - Supported: Go (go/types), TS (compiler API), Java (javaparser)
+#     - Hard: Rust (needs rust-analyzer), C++ (needs clang semantic analysis)
