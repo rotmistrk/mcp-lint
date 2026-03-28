@@ -9,6 +9,8 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 find_path(LIBCLANG_INCLUDE_DIR clang-c/Index.h
     HINTS
         /opt/homebrew/opt/llvm/include
+        /usr/lib/llvm-18/include
+        /usr/lib/llvm-17/include
         /Library/Developer/CommandLineTools/usr/include
         /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include
         /usr/include
@@ -18,6 +20,8 @@ find_path(LIBCLANG_INCLUDE_DIR clang-c/Index.h
 find_library(LIBCLANG_LIBRARY clang
     HINTS
         /opt/homebrew/opt/llvm/lib
+        /usr/lib/llvm-18/lib
+        /usr/lib/llvm-17/lib
         /Library/Developer/CommandLineTools/usr/lib
         /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib
         /usr/lib
