@@ -1,0 +1,36 @@
+plugins {
+    id 'java'
+    id 'application'
+}
+
+group = 'dev.rotmistr'
+version = '0.1.0'
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_21
+    targetCompatibility = JavaVersion.VERSION_21
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation 'com.github.javaparser:javaparser-core:3.26.4'
+    implementation 'com.google.code.gson:gson:2.12.1'
+}
+
+application {
+    mainClass = 'dev.rotmistr.mcplint.Main'
+}
+
+jar {
+    manifest {
+        attributes 'Main-Class': 'dev.rotmistr.mcplint.Main'
+    }
+    from {
+        configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
+    }
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    archiveFileName = 'mcp-lint-java.jar'
+}

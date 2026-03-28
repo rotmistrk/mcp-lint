@@ -2,7 +2,7 @@
 
 BIN_DIR := bin
 
-all: go rs ts cpp
+all: go rs ts cpp java
 
 # --- Go: MCP server + Go checker ---
 
@@ -66,6 +66,17 @@ $(BIN_DIR)/mcp-lint-cpp: $(CPP_SOURCES)
 
 cpp: $(BIN_DIR)/mcp-lint-cpp
 
+# --- Java checker ---
+
+$(BIN_DIR)/mcp-lint-java: $(shell find java/src -name '*.java' 2>/dev/null) java/build.gradle
+	@echo "Building Java checker..."
+	@mkdir -p $(BIN_DIR)
+	cd java && ./gradlew jar -q
+	@printf '#!/bin/sh\njava -jar "$(CURDIR)/java/build/libs/mcp-lint-java.jar" "$$@"\n' > $(BIN_DIR)/mcp-lint-java
+	@chmod +x $(BIN_DIR)/mcp-lint-java
+
+java: $(BIN_DIR)/mcp-lint-java
+
 # --- Install ---
 
 install: all
@@ -76,6 +87,7 @@ install: all
 	@test -f $(BIN_DIR)/mcp-lint-rs && cp $(BIN_DIR)/mcp-lint-rs ~/bin/ || true
 	@test -f $(BIN_DIR)/mcp-lint-ts && cp $(BIN_DIR)/mcp-lint-ts ~/bin/ || true
 	@test -f $(BIN_DIR)/mcp-lint-cpp && cp $(BIN_DIR)/mcp-lint-cpp ~/bin/ || true
+	@test -f $(BIN_DIR)/mcp-lint-java && cp $(BIN_DIR)/mcp-lint-java ~/bin/ || true
 
 # --- Test ---
 
