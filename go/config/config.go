@@ -11,11 +11,12 @@ import (
 
 // Config holds all lint thresholds and language-specific settings.
 type Config struct {
-	MaxMethodLength      int `yaml:"max_method_length"`
-	MaxNestingDepth      int `yaml:"max_nesting_depth"`
-	MaxLineWidth         int `yaml:"max_line_width"`
-	MaxParams            int `yaml:"max_params"`
+	MaxMethodLength        int `yaml:"max_method_length"`
+	MaxNestingDepth        int `yaml:"max_nesting_depth"`
+	MaxLineWidth           int `yaml:"max_line_width"`
+	MaxParams              int `yaml:"max_params"`
 	MaxConsecutiveSameType int `yaml:"max_consecutive_same_type"`
+	MaxCodeLinesPerFile    int `yaml:"max_code_lines_per_file"`
 
 	Go         GoConfig         `yaml:"go"`
 	Rust       RustConfig       `yaml:"rust"`
@@ -28,6 +29,8 @@ type Config struct {
 type GoConfig struct {
 	ForbidPanic          bool `yaml:"forbid_panic"`
 	ForbidTypeAssertions bool `yaml:"forbid_type_assertions"`
+	ForbidExportedFields bool `yaml:"forbid_exported_fields"`
+	MaxTypesPerFile      int  `yaml:"max_types_per_file"`
 }
 
 // RustConfig holds Rust-specific settings.
@@ -62,7 +65,8 @@ func Defaults() *Config {
 		MaxLineWidth:           120,
 		MaxParams:              7,
 		MaxConsecutiveSameType: 2,
-		Go:         GoConfig{ForbidPanic: true, ForbidTypeAssertions: true},
+		MaxCodeLinesPerFile:    240,
+		Go:         GoConfig{ForbidPanic: true, ForbidTypeAssertions: true, ForbidExportedFields: true, MaxTypesPerFile: 1},
 		Rust:       RustConfig{ForbidUnwrap: true, ForbidExpect: true},
 		TypeScript: TypeScriptConfig{ForbidAny: true, ForbidClassComponents: true, ForbidWaitForTimeout: true},
 		Cpp:        CppConfig{ForbidRawNew: true, ForbidCCasts: true},

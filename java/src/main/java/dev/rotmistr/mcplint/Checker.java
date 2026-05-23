@@ -2,8 +2,11 @@ package dev.rotmistr.mcplint;
 
 import com.github.javaparser.StaticJavaParser;
 import com.github.javaparser.ast.CompilationUnit;
+import com.github.javaparser.ast.Modifier;
 import com.github.javaparser.ast.body.CallableDeclaration;
+import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
 import com.github.javaparser.ast.body.ConstructorDeclaration;
+import com.github.javaparser.ast.body.FieldDeclaration;
 import com.github.javaparser.ast.body.MethodDeclaration;
 import com.github.javaparser.ast.stmt.*;
 import com.github.javaparser.ast.type.ClassOrInterfaceType;
@@ -16,6 +19,7 @@ public final class Checker {
     public static List<Violation> check(String source, String path, Config cfg) {
         var violations = new ArrayList<Violation>();
         checkLineWidth(source, cfg, violations);
+        checkCodeLines(source, cfg, violations);
 
         CompilationUnit cu;
         try {
@@ -30,6 +34,10 @@ public final class Checker {
         if (cfg.java.forbid_raw_types) {
             checkRawTypes(cu, violations);
         }
+        if (cfg.java.forbid_public_fields) {
+            checkPublicFields(cu, violations);
+        }
+        checkClassCount(cu, cfg, violations);
         return violations;
     }
 
@@ -42,6 +50,24 @@ public final class Checker {
                         "line is " + lines[i].length() + " chars (max " + cfg.max_line_width + ")",
                         "error"));
             }
+        }
+    }
+
+    private static void checkCodeLines(String source, Config cfg, List<Violation> violations) {
+        if (cfg.max_code_lines_per_file <= 0) return;
+        var lines = source.split("\n", -1);
+        int count = 0;
+        for (var line : lines) {
+            var trimmed = line.trim();
+            if (!trimmed.isEmpty() && !trimmed.startsWith("//")) {
+                count++;
+            }
+        }
+        if (count > cfg.max_code_lines_per_file) {
+            violations.add(new Violation(
+                    1, "file-length",
+                    "file has " + count + " code lines (max " + cfg.max_code_lines_per_file + ")",
+                    "error"));
         }
     }
 
@@ -119,6 +145,39 @@ public final class Checker {
                         "warning"));
             }
         });
+    }
+
+    private static void checkPublicFields(CompilationUnit cu, List<Violation> violations) {
+        cu.findAll(FieldDeclaration.class).forEach(field -> {
+            if (!field.hasModifier(Modifier.Keyword.PUBLIC)) return;
+            if (field.hasModifier(Modifier.Keyword.STATIC) && field.hasModifier(Modifier.Keyword.FINAL)) return;
+            var parent = field.getParentNode().orElse(null);
+            String className = "(unknown)";
+            if (parent instanceof ClassOrInterfaceDeclaration cid) {
+                className = cid.getNameAsString();
+            }
+            for (var variable : field.getVariables()) {
+                int line = variable.getBegin().map(p -> p.line).orElse(0);
+                violations.add(new Violation(
+                        line, "no-public-fields",
+                        className + "." + variable.getNameAsString() +
+                                ": public fields break encapsulation; use methods",
+                        "error"));
+            }
+        });
+    }
+
+    private static void checkClassCount(CompilationUnit cu, Config cfg, List<Violation> violations) {
+        if (cfg.java.max_classes_per_file <= 0) return;
+        var topLevel = cu.findAll(ClassOrInterfaceDeclaration.class).stream()
+                .filter(c -> c.getParentNode().orElse(null) instanceof CompilationUnit)
+                .count();
+        if (topLevel > cfg.java.max_classes_per_file) {
+            violations.add(new Violation(
+                    1, "max-classes-per-file",
+                    "file has " + topLevel + " top-level classes (max " + cfg.java.max_classes_per_file + ")",
+                    "error"));
+        }
     }
 
     private static boolean isGenericType(String name) {

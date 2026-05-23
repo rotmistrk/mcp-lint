@@ -30,6 +30,7 @@ func Check(path string, cfg *config.Config) ([]checks.Violation, error) {
 
 	var violations []checks.Violation
 	violations = append(violations, checkLineWidth(src, cfg)...)
+	violations = append(violations, checkCodeLines(src, cfg)...)
 	if !isTest {
 		if cfg.Go.ForbidPanic {
 			violations = append(violations, checkPanicCalls(fset, file)...)
@@ -37,8 +38,12 @@ func Check(path string, cfg *config.Config) ([]checks.Violation, error) {
 		if cfg.Go.ForbidTypeAssertions {
 			violations = append(violations, checkTypeAssertions(fset, file)...)
 		}
+		if cfg.Go.ForbidExportedFields {
+			violations = append(violations, checkExportedFields(fset, file)...)
+		}
 	}
 	violations = append(violations, checkFunctions(fset, file, cfg)...)
+	violations = append(violations, checkTypeCount(fset, file, cfg)...)
 	return violations, nil
 }
 
@@ -269,4 +274,89 @@ func typeString(expr ast.Expr) string {
 	default:
 		return fmt.Sprintf("%T", expr)
 	}
+}
+
+func checkCodeLines(src []byte, cfg *config.Config) []checks.Violation {
+	if cfg.MaxCodeLinesPerFile <= 0 {
+		return nil
+	}
+	count := 0
+	for _, line := range strings.Split(string(src), "\n") {
+		trimmed := strings.TrimSpace(line)
+		if trimmed != "" && !strings.HasPrefix(trimmed, "//") {
+			count++
+		}
+	}
+	if count > cfg.MaxCodeLinesPerFile {
+		return []checks.Violation{{
+			Line:     1,
+			Rule:     "file-length",
+			Message:  fmt.Sprintf("file has %d code lines (max %d)", count, cfg.MaxCodeLinesPerFile),
+			Severity: "error",
+		}}
+	}
+	return nil
+}
+
+func checkExportedFields(
+	fset *token.FileSet,
+	file *ast.File,
+) []checks.Violation {
+	var violations []checks.Violation
+	for _, decl := range file.Decls {
+		genDecl, ok := decl.(*ast.GenDecl)
+		if !ok || genDecl.Tok != token.TYPE {
+			continue
+		}
+		for _, spec := range genDecl.Specs {
+			ts, ok := spec.(*ast.TypeSpec)
+			if !ok {
+				continue
+			}
+			st, ok := ts.Type.(*ast.StructType)
+			if !ok || st.Fields == nil {
+				continue
+			}
+			for _, field := range st.Fields.List {
+				for _, name := range field.Names {
+					if name.IsExported() {
+						violations = append(violations, checks.Violation{
+							Line:     fset.Position(name.Pos()).Line,
+							Rule:     "no-exported-fields",
+							Message:  fmt.Sprintf("%s.%s: exported fields break encapsulation; use methods", ts.Name.Name, name.Name),
+							Severity: "error",
+						})
+					}
+				}
+			}
+		}
+	}
+	return violations
+}
+
+func checkTypeCount(
+	fset *token.FileSet,
+	file *ast.File,
+	cfg *config.Config,
+) []checks.Violation {
+	if cfg.Go.MaxTypesPerFile <= 0 {
+		return nil
+	}
+	count := 0
+	for _, decl := range file.Decls {
+		genDecl, ok := decl.(*ast.GenDecl)
+		if !ok || genDecl.Tok != token.TYPE {
+			continue
+		}
+		count += len(genDecl.Specs)
+	}
+	if count > cfg.Go.MaxTypesPerFile {
+		return []checks.Violation{{
+			Line:     1,
+			Rule:     "max-types-per-file",
+			Message:  fmt.Sprintf("file has %d type declarations (max %d)", count, cfg.Go.MaxTypesPerFile),
+			Severity: "error",
+		}}
+	}
+	return nil
 }

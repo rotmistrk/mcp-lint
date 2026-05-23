@@ -60,7 +60,10 @@ Config parse_config_json(const std::string& json) {
     cfg.max_line_width = json_int(json, "max_line_width", 120);
     cfg.max_params = json_int(json, "max_params", 7);
     cfg.max_consecutive_same_type = json_int(json, "max_consecutive_same_type", 2);
+    cfg.max_code_lines_per_file = json_int(json, "max_code_lines_per_file", 240);
     cfg.forbid_raw_new = json_bool(json, "forbid_raw_new", true);
     cfg.forbid_c_casts = json_bool(json, "forbid_c_casts", true);
+    cfg.forbid_public_members = json_bool(json, "forbid_public_members", true);
+    cfg.max_classes_per_file = json_int(json, "max_classes_per_file", 1);
     return cfg;
 }

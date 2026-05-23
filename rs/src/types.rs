@@ -23,6 +23,8 @@ pub struct Config {
     #[serde(default = "default_consecutive")]
     #[allow(dead_code)]
     pub max_consecutive_same_type: usize,
+    #[serde(default = "default_code_lines")]
+    pub max_code_lines_per_file: usize,
     #[serde(default)]
     pub rust: RustConfig,
 }
@@ -58,6 +60,7 @@ impl Default for Config {
             max_line_width: 120,
             max_params: 7,
             max_consecutive_same_type: 2,
+            max_code_lines_per_file: 240,
             rust: RustConfig::default(),
         }
     }
@@ -68,4 +71,5 @@ fn default_nesting_depth() -> usize { 3 }
 fn default_line_width() -> usize { 120 }
 fn default_params() -> usize { 7 }
 fn default_consecutive() -> usize { 2 }
+fn default_code_lines() -> usize { 240 }
 fn default_true() -> bool { true }

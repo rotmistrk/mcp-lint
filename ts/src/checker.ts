@@ -7,6 +7,7 @@ export function check(path: string, cfg: Config): Violation[] {
   const violations: Violation[] = [];
 
   violations.push(...checkLineWidth(source, cfg));
+  violations.push(...checkCodeLines(source, cfg));
 
   const sourceFile = ts.createSourceFile(
     path,
@@ -21,7 +22,58 @@ export function check(path: string, cfg: Config): Violation[] {
     path.endsWith(".spec.ts") ||
     path.endsWith(".spec.tsx");
 
-  visitNode(sourceFile, sourceFile, cfg, isTest, violations);
+  let classCount = 0;
+
+  const visit = (node: ts.Node): void => {
+    if (
+      ts.isFunctionDeclaration(node) ||
+      ts.isMethodDeclaration(node) ||
+      ts.isArrowFunction(node) ||
+      ts.isFunctionExpression(node)
+    ) {
+      checkFunction(node, sourceFile, cfg, violations);
+    }
+
+    if (cfg.typescript.forbid_any && node.kind === ts.SyntaxKind.AnyKeyword) {
+      violations.push({
+        line: getLine(node, sourceFile),
+        rule: "no-any",
+        message: "use 'unknown' or a specific type instead of 'any'",
+        severity: "error",
+      });
+    }
+
+    if (ts.isClassDeclaration(node)) {
+      classCount++;
+      if (cfg.typescript.forbid_class_components) {
+        checkClassComponent(node, sourceFile, violations);
+      }
+      if (cfg.typescript.forbid_public_properties) {
+        checkPublicProperties(node, sourceFile, violations);
+      }
+    }
+
+    if (isTest && cfg.typescript.forbid_wait_for_timeout) {
+      checkWaitForTimeout(node, sourceFile, violations);
+    }
+
+    ts.forEachChild(node, visit);
+  };
+
+  visit(sourceFile);
+
+  if (
+    cfg.typescript.max_classes_per_file > 0 &&
+    classCount > cfg.typescript.max_classes_per_file
+  ) {
+    violations.push({
+      line: 1,
+      rule: "max-classes-per-file",
+      message: `file has ${classCount} classes (max ${cfg.typescript.max_classes_per_file})`,
+      severity: "error",
+    });
+  }
+
   return violations;
 }
 
@@ -41,59 +93,25 @@ function checkLineWidth(source: string, cfg: Config): Violation[] {
   return violations;
 }
 
-function visitNode(
-  node: ts.Node,
-  sourceFile: ts.SourceFile,
-  cfg: Config,
-  isTest: boolean,
-  violations: Violation[],
-): void {
-  // Check functions/methods for length, nesting, params
-  if (
-    ts.isFunctionDeclaration(node) ||
-    ts.isMethodDeclaration(node) ||
-    ts.isArrowFunction(node) ||
-    ts.isFunctionExpression(node)
-  ) {
-    checkFunction(node, sourceFile, cfg, violations);
-  }
-
-  // Forbid `any` type
-  if (cfg.typescript.forbid_any && ts.isTypeReferenceNode(node)) {
-    const name = node.typeName.getText(sourceFile);
-    if (name === "any") {
-      violations.push({
-        line: getLine(node, sourceFile),
-        rule: "no-any",
-        message: "use 'unknown' or a specific type instead of 'any'",
+function checkCodeLines(source: string, cfg: Config): Violation[] {
+  if (cfg.max_code_lines_per_file <= 0) return [];
+  const count = source
+    .split("\n")
+    .filter((line) => {
+      const trimmed = line.trim();
+      return trimmed !== "" && !trimmed.startsWith("//");
+    }).length;
+  if (count > cfg.max_code_lines_per_file) {
+    return [
+      {
+        line: 1,
+        rule: "file-length",
+        message: `file has ${count} code lines (max ${cfg.max_code_lines_per_file})`,
         severity: "error",
-      });
-    }
+      },
+    ];
   }
-
-  // Catch `: any` and `as any` via keyword token
-  if (node.kind === ts.SyntaxKind.AnyKeyword) {
-    violations.push({
-      line: getLine(node, sourceFile),
-      rule: "no-any",
-      message: "use 'unknown' or a specific type instead of 'any'",
-      severity: "error",
-    });
-  }
-
-  // Forbid class components
-  if (cfg.typescript.forbid_class_components && ts.isClassDeclaration(node)) {
-    checkClassComponent(node, sourceFile, violations);
-  }
-
-  // Forbid waitForTimeout in tests
-  if (isTest && cfg.typescript.forbid_wait_for_timeout) {
-    checkWaitForTimeout(node, sourceFile, violations);
-  }
-
-  ts.forEachChild(node, (child) =>
-    visitNode(child, sourceFile, cfg, isTest, violations),
-  );
+  return [];
 }
 
 function checkFunction(
@@ -116,7 +134,6 @@ function checkFunction(
     });
   }
 
-  // Parameter count
   if ("parameters" in node) {
     const params = (node as ts.FunctionLikeDeclaration).parameters;
     if (params.length > cfg.max_params) {
@@ -157,6 +174,32 @@ function checkClassComponent(
   }
 }
 
+function checkPublicProperties(
+  node: ts.ClassDeclaration,
+  sourceFile: ts.SourceFile,
+  violations: Violation[],
+): void {
+  const className = node.name?.getText(sourceFile) ?? "(anonymous)";
+  for (const member of node.members) {
+    if (!ts.isPropertyDeclaration(member)) continue;
+    const mods = ts.getModifiers(member);
+    const hasPrivate = mods?.some(
+      (m) =>
+        m.kind === ts.SyntaxKind.PrivateKeyword ||
+        m.kind === ts.SyntaxKind.ProtectedKeyword,
+    );
+    if (hasPrivate) continue;
+    const name = member.name.getText(sourceFile);
+    if (name.startsWith("#")) continue;
+    violations.push({
+      line: getLine(member, sourceFile),
+      rule: "no-public-properties",
+      message: `${className}.${name}: public properties break encapsulation; use private`,
+      severity: "error",
+    });
+  }
+}
+
 function checkWaitForTimeout(
   node: ts.Node,
   sourceFile: ts.SourceFile,
@@ -176,8 +219,9 @@ function checkWaitForTimeout(
 }
 
 function getLine(node: ts.Node, sourceFile: ts.SourceFile): number {
-  return sourceFile.getLineAndCharacterOfPosition(node.getStart(sourceFile))
-    .line + 1;
+  return (
+    sourceFile.getLineAndCharacterOfPosition(node.getStart(sourceFile)).line + 1
+  );
 }
 
 function getEndLine(node: ts.Node, sourceFile: ts.SourceFile): number {
@@ -188,7 +232,6 @@ function getFunctionName(node: ts.Node, sourceFile: ts.SourceFile): string {
   if (ts.isFunctionDeclaration(node) || ts.isMethodDeclaration(node)) {
     return node.name?.getText(sourceFile) ?? "(anonymous)";
   }
-  // Arrow function — try to get variable name
   if (ts.isVariableDeclaration(node.parent)) {
     return node.parent.name.getText(sourceFile);
   }

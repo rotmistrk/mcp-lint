@@ -11,10 +11,13 @@ export interface Config {
   max_line_width: number;
   max_params: number;
   max_consecutive_same_type: number;
+  max_code_lines_per_file: number;
   typescript: {
     forbid_any: boolean;
     forbid_class_components: boolean;
     forbid_wait_for_timeout: boolean;
+    forbid_public_properties: boolean;
+    max_classes_per_file: number;
   };
 }
 
@@ -24,9 +27,12 @@ export const defaults: Config = {
   max_line_width: 120,
   max_params: 7,
   max_consecutive_same_type: 2,
+  max_code_lines_per_file: 240,
   typescript: {
     forbid_any: true,
     forbid_class_components: true,
     forbid_wait_for_timeout: true,
+    forbid_public_properties: true,
+    max_classes_per_file: 1,
   },
 };

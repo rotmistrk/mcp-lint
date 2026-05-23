@@ -16,8 +16,11 @@ struct Config {
     int max_line_width = 120;
     int max_params = 7;
     int max_consecutive_same_type = 2;
+    int max_code_lines_per_file = 240;
     bool forbid_raw_new = true;
     bool forbid_c_casts = true;
+    bool forbid_public_members = true;
+    int max_classes_per_file = 1;
 };
 
 [[nodiscard]] std::string violations_to_json(const std::vector<Violation>& violations);

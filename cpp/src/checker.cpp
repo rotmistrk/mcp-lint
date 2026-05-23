@@ -30,12 +30,41 @@ static std::vector<Violation> check_line_width(
     return violations;
 }
 
+// --- Code lines check ---
+
+static std::vector<Violation> check_code_lines(
+    const std::string& path,
+    const Config& cfg
+) {
+    if (cfg.max_code_lines_per_file <= 0) return {};
+    std::ifstream file(path);
+    std::string line;
+    int count = 0;
+
+    while (std::getline(file, line)) {
+        size_t start = line.find_first_not_of(" \t\r");
+        if (start == std::string::npos) continue;
+        if (line.compare(start, 2, "//") == 0) continue;
+        ++count;
+    }
+    if (count > cfg.max_code_lines_per_file) {
+        return {{
+            1, "file-length",
+            "file has " + std::to_string(count) +
+                " code lines (max " + std::to_string(cfg.max_code_lines_per_file) + ")",
+            "error"
+        }};
+    }
+    return {};
+}
+
 // --- AST helpers ---
 
 struct CheckContext {
     const Config* cfg;
     std::vector<Violation>* violations;
     bool is_test;
+    int class_count;
 };
 
 static int get_line(CXCursor cursor) {
@@ -144,6 +173,30 @@ static void check_function(CXCursor cursor, CheckContext* ctx) {
     }
 }
 
+// --- Public member check ---
+
+static CXChildVisitResult member_visitor(
+    CXCursor c, CXCursor parent, CXClientData ud
+) {
+    auto* ctx = static_cast<CheckContext*>(ud);
+    auto kind = clang_getCursorKind(c);
+
+    if (kind == CXCursor_FieldDecl) {
+        auto access = clang_getCXXAccessSpecifier(c);
+        if (access == CX_CXXPublic) {
+            auto field_name = get_spelling(c);
+            auto class_name = get_spelling(parent);
+            ctx->violations->push_back({
+                get_line(c), "no-public-members",
+                class_name + "." + field_name +
+                    ": public data members break encapsulation; use methods",
+                "error"
+            });
+        }
+    }
+    return CXChildVisit_Continue;
+}
+
 // --- Main visitor ---
 
 static CXChildVisitResult root_visitor(
@@ -158,6 +211,16 @@ static CXChildVisitResult root_visitor(
         kind == CXCursor_Constructor) {
         if (clang_isCursorDefinition(c)) {
             check_function(c, ctx);
+        }
+    }
+
+    // Count classes/structs and check public members
+    if (kind == CXCursor_ClassDecl || kind == CXCursor_StructDecl) {
+        if (clang_isCursorDefinition(c)) {
+            ctx->class_count++;
+            if (!ctx->is_test && ctx->cfg->forbid_public_members) {
+                clang_visitChildren(c, member_visitor, ctx);
+            }
         }
     }
 
@@ -189,6 +252,8 @@ std::vector<Violation> check_file(
     const Config& cfg
 ) {
     auto violations = check_line_width(path, cfg);
+    auto code_violations = check_code_lines(path, cfg);
+    violations.insert(violations.end(), code_violations.begin(), code_violations.end());
 
     bool is_test = path.find("_test.") != std::string::npos ||
                    path.find("/test/") != std::string::npos ||
@@ -206,8 +271,17 @@ std::vector<Violation> check_file(
         return violations;
     }
 
-    CheckContext ctx{&cfg, &violations, is_test};
+    CheckContext ctx{&cfg, &violations, is_test, 0};
     clang_visitChildren(clang_getTranslationUnitCursor(tu), root_visitor, &ctx);
+
+    if (cfg.max_classes_per_file > 0 && ctx.class_count > cfg.max_classes_per_file) {
+        violations.push_back({
+            1, "max-classes-per-file",
+            "file has " + std::to_string(ctx.class_count) +
+                " classes (max " + std::to_string(cfg.max_classes_per_file) + ")",
+            "error"
+        });
+    }
 
     clang_disposeTranslationUnit(tu);
     clang_disposeIndex(index);

@@ -6,6 +6,7 @@ use crate::types::{Config, Violation};
 /// Check a Rust source file against coding standards.
 pub fn check(source: &str, path: &str, cfg: &Config) -> Vec<Violation> {
     let mut violations = check_line_width(source, cfg);
+    violations.extend(check_code_lines(source, cfg));
 
     let is_test = path.ends_with("_test.rs")
         || path.contains("/tests/")
@@ -64,6 +65,32 @@ fn check_line_width(source: &str, cfg: &Config) -> Vec<Violation> {
             severity: "error".into(),
         })
         .collect()
+}
+
+fn check_code_lines(source: &str, cfg: &Config) -> Vec<Violation> {
+    if cfg.max_code_lines_per_file == 0 {
+        return Vec::new();
+    }
+    let count = source
+        .lines()
+        .filter(|line| {
+            let trimmed = line.trim();
+            !trimmed.is_empty() && !trimmed.starts_with("//")
+        })
+        .count();
+    if count > cfg.max_code_lines_per_file {
+        vec![Violation {
+            line: 1,
+            rule: "file-length".into(),
+            message: format!(
+                "file has {} code lines (max {})",
+                count, cfg.max_code_lines_per_file
+            ),
+            severity: "error".into(),
+        }]
+    } else {
+        Vec::new()
+    }
 }
 
 struct RustVisitor<'a> {
