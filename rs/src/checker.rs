@@ -1,5 +1,5 @@
 use syn::visit::Visit;
-use syn::{self, Expr, ExprMethodCall, ImplItemFn, ItemFn, Stmt};
+use syn::{self, Expr, ExprMethodCall, ImplItemFn, ItemFn, ItemStruct, Stmt, Visibility};
 
 use crate::types::{Config, Violation};
 
@@ -28,8 +28,22 @@ pub fn check(source: &str, path: &str, cfg: &Config) -> Vec<Violation> {
         cfg,
         is_test,
         violations: Vec::new(),
+        struct_count: 0,
     };
     visitor.visit_file(&file);
+    if visitor.cfg.rust.max_structs_per_file > 0
+        && visitor.struct_count > visitor.cfg.rust.max_structs_per_file
+    {
+        visitor.violations.push(Violation {
+            line: 1,
+            rule: "max-structs-per-file".into(),
+            message: format!(
+                "file has {} structs (max {})",
+                visitor.struct_count, visitor.cfg.rust.max_structs_per_file
+            ),
+            severity: "error".into(),
+        });
+    }
     violations.extend(visitor.violations);
     violations
 }
@@ -56,6 +70,7 @@ struct RustVisitor<'a> {
     cfg: &'a Config,
     is_test: bool,
     violations: Vec<Violation>,
+    struct_count: usize,
 }
 
 impl<'a> RustVisitor<'a> {
@@ -136,6 +151,36 @@ impl<'a> Visit<'a> for RustVisitor<'a> {
         let params = node.sig.inputs.len();
         self.check_fn(&name, start, params, &node.block);
         syn::visit::visit_impl_item_fn(self, node);
+    }
+
+    fn visit_item_struct(&mut self, node: &'a ItemStruct) {
+        self.struct_count += 1;
+        if self.cfg.rust.forbid_pub_fields {
+            let struct_name = node.ident.to_string();
+            for field in &node.fields {
+                if matches!(field.vis, Visibility::Public(_)) {
+                    let line = field
+                        .ident
+                        .as_ref()
+                        .map(|i| i.span().start().line)
+                        .unwrap_or(node.ident.span().start().line);
+                    let field_name = field
+                        .ident
+                        .as_ref()
+                        .map(|i| i.to_string())
+                        .unwrap_or_else(|| "unnamed".into());
+                    self.violations.push(Violation {
+                        line,
+                        rule: "no-pub-fields".into(),
+                        message: format!(
+                            "{struct_name}.{field_name}: public fields break encapsulation; use methods"
+                        ),
+                        severity: "error".into(),
+                    });
+                }
+            }
+        }
+        syn::visit::visit_item_struct(self, node);
     }
 }
 

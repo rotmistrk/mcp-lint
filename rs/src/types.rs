@@ -33,6 +33,10 @@ pub struct RustConfig {
     pub forbid_unwrap: bool,
     #[serde(default = "default_true")]
     pub forbid_expect: bool,
+    #[serde(default = "default_true")]
+    pub forbid_pub_fields: bool,
+    #[serde(default)]
+    pub max_structs_per_file: usize,
 }
 
 impl Default for RustConfig {
@@ -40,6 +44,8 @@ impl Default for RustConfig {
         Self {
             forbid_unwrap: true,
             forbid_expect: true,
+            forbid_pub_fields: true,
+            max_structs_per_file: 1,
         }
     }
 }
