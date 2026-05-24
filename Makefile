@@ -82,12 +82,12 @@ java: $(BIN_DIR)/mcp-lint-java
 install: all
 	@echo "Installing to ~/bin/..."
 	@mkdir -p ~/bin
-	cp $(BIN_DIR)/mcp-lint ~/bin/
-	cp $(BIN_DIR)/mcp-lint-go ~/bin/
-	@test -f $(BIN_DIR)/mcp-lint-rs && cp $(BIN_DIR)/mcp-lint-rs ~/bin/ || true
-	@test -f $(BIN_DIR)/mcp-lint-ts && cp $(BIN_DIR)/mcp-lint-ts ~/bin/ || true
-	@test -f $(BIN_DIR)/mcp-lint-cpp && cp $(BIN_DIR)/mcp-lint-cpp ~/bin/ || true
-	@test -f $(BIN_DIR)/mcp-lint-java && cp $(BIN_DIR)/mcp-lint-java ~/bin/ || true
+	install -m 755 $(BIN_DIR)/mcp-lint ~/bin/
+	install -m 755 $(BIN_DIR)/mcp-lint-go ~/bin/
+	@test -f $(BIN_DIR)/mcp-lint-rs && install -m 755 $(BIN_DIR)/mcp-lint-rs ~/bin/ || true
+	@test -f $(BIN_DIR)/mcp-lint-ts && install -m 755 $(BIN_DIR)/mcp-lint-ts ~/bin/ || true
+	@test -f $(BIN_DIR)/mcp-lint-cpp && install -m 755 $(BIN_DIR)/mcp-lint-cpp ~/bin/ || true
+	@test -f $(BIN_DIR)/mcp-lint-java && install -m 755 $(BIN_DIR)/mcp-lint-java ~/bin/ || true
 
 # --- Test ---
 
