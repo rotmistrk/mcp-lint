@@ -240,6 +240,31 @@ static CXChildVisitResult root_visitor(
                 "error"
             });
         }
+        if (ctx->cfg->forbid_empty_catch && kind == CXCursor_CXXCatchStmt) {
+            // Check if catch body (compound stmt) is empty
+            struct ChildData { int stmt_count; };
+            ChildData cd{0};
+            clang_visitChildren(c, [](CXCursor child, CXCursor, CXClientData ud) {
+                auto* d = static_cast<ChildData*>(ud);
+                if (clang_getCursorKind(child) == CXCursor_CompoundStmt) {
+                    struct BodyData { int count; };
+                    BodyData bd{0};
+                    clang_visitChildren(child, [](CXCursor, CXCursor, CXClientData ud2) {
+                        static_cast<BodyData*>(ud2)->count++;
+                        return CXChildVisit_Break;
+                    }, &bd);
+                    d->stmt_count = bd.count;
+                }
+                return CXChildVisit_Continue;
+            }, &cd);
+            if (cd.stmt_count == 0) {
+                ctx->violations->push_back({
+                    get_line(c), "no-empty-catch",
+                    "empty catch block swallows errors; handle or log explicitly",
+                    "error"
+                });
+            }
+        }
     }
 
     return CXChildVisit_Recurse;

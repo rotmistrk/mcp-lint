@@ -57,6 +57,18 @@ export function check(path: string, cfg: Config): Violation[] {
       checkWaitForTimeout(node, sourceFile, violations);
     }
 
+    if (cfg.typescript.forbid_empty_catch && ts.isCatchClause(node)) {
+      if (node.block.statements.length === 0) {
+        violations.push({
+          line: getLine(node, sourceFile),
+          rule: "no-empty-catch",
+          message:
+            "empty catch block swallows errors; handle or log explicitly",
+          severity: "error",
+        });
+      }
+    }
+
     ts.forEachChild(node, visit);
   };
 

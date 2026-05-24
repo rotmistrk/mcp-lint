@@ -1,5 +1,6 @@
 use syn::visit::Visit;
-use syn::{self, Expr, ExprMethodCall, ImplItemFn, ItemFn, ItemStruct, Stmt, Visibility};
+use syn::spanned::Spanned;
+use syn::{self, Expr, ExprMethodCall, ExprMacro, ImplItemFn, ItemFn, ItemStruct, Stmt, Visibility};
 
 use crate::types::{Config, Violation};
 
@@ -241,6 +242,39 @@ impl<'a> Visit<'a> for UnwrapFinder<'a> {
         }
         syn::visit::visit_expr_method_call(self, node);
     }
+
+    fn visit_expr_macro(&mut self, node: &'a ExprMacro) {
+        self.check_panic_macro(&node.mac);
+        syn::visit::visit_expr_macro(self, node);
+    }
+
+    fn visit_stmt_macro(&mut self, node: &'a syn::StmtMacro) {
+        self.check_panic_macro(&node.mac);
+        syn::visit::visit_stmt_macro(self, node);
+    }
+}
+
+impl<'a> UnwrapFinder<'a> {
+    fn check_panic_macro(&mut self, mac: &syn::Macro) {
+        if !self.cfg.rust.forbid_panic {
+            return;
+        }
+        let name = mac.path.segments.last().map(|s| s.ident.to_string());
+        if let Some(name) = name {
+            if matches!(name.as_str(), "panic" | "todo" | "unimplemented") {
+                let line = mac.path.span().start().line;
+                self.violations.push(Violation {
+                    line,
+                    rule: "no-panic".into(),
+                    message: format!(
+                        "{}!() is forbidden in non-test code; handle errors gracefully",
+                        name
+                    ),
+                    severity: "error".into(),
+                });
+            }
+        }
+    }
 }
 
 fn block_end_line(block: &syn::Block, _fallback: usize) -> usize {
@@ -351,6 +385,36 @@ mod tests {
         assert!(
             !v.iter().any(|v| v.rule == "no-unwrap"),
             "unwrap should be allowed in test code"
+        );
+    }
+
+    #[test]
+    fn test_panic_macro() {
+        let src = "fn bad() {\n    panic!(\"boom\");\n}\n";
+        let v = check(src, "lib.rs", &cfg());
+        assert!(
+            v.iter().any(|v| v.rule == "no-panic"),
+            "expected no-panic: {v:?}"
+        );
+    }
+
+    #[test]
+    fn test_todo_macro() {
+        let src = "fn bad() {\n    todo!();\n}\n";
+        let v = check(src, "lib.rs", &cfg());
+        assert!(
+            v.iter().any(|v| v.rule == "no-panic"),
+            "expected no-panic for todo!: {v:?}"
+        );
+    }
+
+    #[test]
+    fn test_panic_allowed_in_tests() {
+        let src = "#[cfg(test)]\nfn test_ok() {\n    panic!(\"ok\");\n}\n";
+        let v = check(src, "lib.rs", &cfg());
+        assert!(
+            !v.iter().any(|v| v.rule == "no-panic"),
+            "panic should be allowed in test code"
         );
     }
 

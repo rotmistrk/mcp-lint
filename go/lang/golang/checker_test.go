@@ -164,3 +164,37 @@ func TestCheck_LineWidth(t *testing.T) {
 		t.Error("expected line-width violation")
 	}
 }
+
+func TestCheck_SwallowedError(t *testing.T) {
+	v, err := Check(writeTempGo(t, "sw.go", `package foo
+
+import "os"
+
+func Bad() {
+	_ = os.Remove("/tmp/x")
+}
+`), cfg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !findRule(v, "no-swallowed-error") {
+		t.Error("expected no-swallowed-error violation")
+	}
+}
+
+func TestCheck_SwallowedErrorAllowedInTests(t *testing.T) {
+	v, err := Check(writeTempGo(t, "sw_test.go", `package foo
+
+import "os"
+
+func TestX() {
+	_ = os.Remove("/tmp/x")
+}
+`), cfg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if findRule(v, "no-swallowed-error") {
+		t.Error("swallowed error should be allowed in test files")
+	}
+}

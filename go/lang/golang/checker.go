@@ -41,6 +41,9 @@ func Check(path string, cfg *config.Config) ([]checks.Violation, error) {
 		if cfg.Go.ForbidExportedFields {
 			violations = append(violations, checkExportedFields(fset, file)...)
 		}
+		if cfg.Go.ForbidSwallowedErrors {
+			violations = append(violations, checkSwallowedErrors(fset, file)...)
+		}
 	}
 	violations = append(violations, checkFunctions(fset, file, cfg)...)
 	violations = append(violations, checkTypeCount(fset, file, cfg)...)
@@ -102,6 +105,47 @@ func checkTypeAssertions(
 			Message:  "type assertion indicates design flaw; use interfaces",
 			Severity: "error",
 		})
+		return true
+	})
+	return violations
+}
+
+func checkSwallowedErrors(fset *token.FileSet, file *ast.File) []checks.Violation {
+	var violations []checks.Violation
+	ast.Inspect(file, func(n ast.Node) bool {
+		assign, ok := n.(*ast.AssignStmt)
+		if !ok {
+			return true
+		}
+		// Only flag when RHS is a call expression and LHS has _
+		for i, lhs := range assign.Lhs {
+			ident, ok := lhs.(*ast.Ident)
+			if !ok || ident.Name != "_" {
+				continue
+			}
+			// Check corresponding RHS is a call, or single RHS is a call
+			if len(assign.Rhs) == 1 {
+				if _, isCall := assign.Rhs[0].(*ast.CallExpr); isCall {
+					violations = append(violations, checks.Violation{
+						Line:     fset.Position(assign.Pos()).Line,
+						Rule:     "no-swallowed-error",
+						Message:  "discarding return value with _ may swallow errors; handle or log explicitly",
+						Severity: "error",
+					})
+					break
+				}
+			} else if i < len(assign.Rhs) {
+				if _, isCall := assign.Rhs[i].(*ast.CallExpr); isCall {
+					violations = append(violations, checks.Violation{
+						Line:     fset.Position(assign.Pos()).Line,
+						Rule:     "no-swallowed-error",
+						Message:  "discarding return value with _ may swallow errors; handle or log explicitly",
+						Severity: "error",
+					})
+					break
+				}
+			}
+		}
 		return true
 	})
 	return violations

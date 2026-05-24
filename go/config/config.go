@@ -27,16 +27,18 @@ type Config struct {
 
 // GoConfig holds Go-specific settings.
 type GoConfig struct {
-	ForbidPanic          bool `yaml:"forbid_panic"`
-	ForbidTypeAssertions bool `yaml:"forbid_type_assertions"`
-	ForbidExportedFields bool `yaml:"forbid_exported_fields"`
-	MaxTypesPerFile      int  `yaml:"max_types_per_file"`
+	ForbidPanic           bool `yaml:"forbid_panic"`
+	ForbidTypeAssertions  bool `yaml:"forbid_type_assertions"`
+	ForbidExportedFields  bool `yaml:"forbid_exported_fields"`
+	ForbidSwallowedErrors bool `yaml:"forbid_swallowed_errors"`
+	MaxTypesPerFile       int  `yaml:"max_types_per_file"`
 }
 
 // RustConfig holds Rust-specific settings.
 type RustConfig struct {
 	ForbidUnwrap bool `yaml:"forbid_unwrap"`
 	ForbidExpect bool `yaml:"forbid_expect"`
+	ForbidPanic  bool `yaml:"forbid_panic"`
 }
 
 // TypeScriptConfig holds TypeScript-specific settings.
@@ -44,12 +46,14 @@ type TypeScriptConfig struct {
 	ForbidAny             bool `yaml:"forbid_any"`
 	ForbidClassComponents bool `yaml:"forbid_class_components"`
 	ForbidWaitForTimeout  bool `yaml:"forbid_wait_for_timeout"`
+	ForbidEmptyCatch      bool `yaml:"forbid_empty_catch"`
 }
 
 // CppConfig holds C++-specific settings.
 type CppConfig struct {
-	ForbidRawNew bool `yaml:"forbid_raw_new"`
-	ForbidCCasts bool `yaml:"forbid_c_casts"`
+	ForbidRawNew    bool `yaml:"forbid_raw_new"`
+	ForbidCCasts    bool `yaml:"forbid_c_casts"`
+	ForbidEmptyCatch bool `yaml:"forbid_empty_catch"`
 }
 
 // JavaConfig holds Java-specific settings.
@@ -66,10 +70,10 @@ func Defaults() *Config {
 		MaxParams:              7,
 		MaxConsecutiveSameType: 2,
 		MaxCodeLinesPerFile:    240,
-		Go:         GoConfig{ForbidPanic: true, ForbidTypeAssertions: true, ForbidExportedFields: true, MaxTypesPerFile: 1},
-		Rust:       RustConfig{ForbidUnwrap: true, ForbidExpect: true},
-		TypeScript: TypeScriptConfig{ForbidAny: true, ForbidClassComponents: true, ForbidWaitForTimeout: true},
-		Cpp:        CppConfig{ForbidRawNew: true, ForbidCCasts: true},
+		Go:         GoConfig{ForbidPanic: true, ForbidTypeAssertions: true, ForbidExportedFields: true, ForbidSwallowedErrors: true, MaxTypesPerFile: 1},
+		Rust:       RustConfig{ForbidUnwrap: true, ForbidExpect: true, ForbidPanic: true},
+		TypeScript: TypeScriptConfig{ForbidAny: true, ForbidClassComponents: true, ForbidWaitForTimeout: true, ForbidEmptyCatch: true},
+		Cpp:        CppConfig{ForbidRawNew: true, ForbidCCasts: true, ForbidEmptyCatch: true},
 		Java:       JavaConfig{ForbidRawTypes: true},
 	}
 }

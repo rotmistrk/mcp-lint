@@ -20,6 +20,7 @@ struct Config {
     bool forbid_raw_new = true;
     bool forbid_c_casts = true;
     bool forbid_public_members = true;
+    bool forbid_empty_catch = true;
     int max_classes_per_file = 1;
 };
 

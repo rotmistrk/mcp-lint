@@ -13,11 +13,13 @@ go:
   forbid_panic: true
   forbid_type_assertions: true
   forbid_exported_fields: true
+  forbid_swallowed_errors: true
   max_types_per_file: 1
 
 rust:
   forbid_unwrap: true
   forbid_expect: true
+  forbid_panic: true
   forbid_pub_fields: true
   max_structs_per_file: 1
 
@@ -26,12 +28,14 @@ typescript:
   forbid_class_components: true
   forbid_wait_for_timeout: true
   forbid_public_properties: true
+  forbid_empty_catch: true
   max_classes_per_file: 1
 
 cpp:
   forbid_raw_new: true
   forbid_c_casts: true
   forbid_public_members: true
+  forbid_empty_catch: true
   max_classes_per_file: 1
 
 java:
