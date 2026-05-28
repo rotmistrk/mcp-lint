@@ -18,6 +18,7 @@ export interface Config {
     forbid_wait_for_timeout: boolean;
     forbid_public_properties: boolean;
     forbid_empty_catch: boolean;
+    forbid_deep_access: boolean;
     max_classes_per_file: number;
   };
 }
@@ -35,6 +36,7 @@ export const defaults: Config = {
     forbid_wait_for_timeout: true,
     forbid_public_properties: true,
     forbid_empty_catch: true,
+    forbid_deep_access: true,
     max_classes_per_file: 1,
   },
 };

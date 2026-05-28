@@ -18,7 +18,12 @@ $(BIN_DIR)/mcp-lint-go: $(GO_SOURCES)
 	@mkdir -p $(BIN_DIR)
 	cd go && go build -ldflags="-w -s" -o ../$(BIN_DIR)/mcp-lint-go ./cmd/mcp-lint-go
 
-go: $(BIN_DIR)/mcp-lint $(BIN_DIR)/mcp-lint-go
+$(BIN_DIR)/mcp-lint-cli: $(GO_SOURCES)
+	@echo "Building CLI tool..."
+	@mkdir -p $(BIN_DIR)
+	cd go && go build -ldflags="-w -s" -o ../$(BIN_DIR)/mcp-lint-cli ./cmd/mcp-lint-cli
+
+go: $(BIN_DIR)/mcp-lint $(BIN_DIR)/mcp-lint-go $(BIN_DIR)/mcp-lint-cli
 
 go-test:
 	cd go && go test ./...
@@ -84,6 +89,7 @@ install: all
 	@mkdir -p ~/bin
 	install -m 755 $(BIN_DIR)/mcp-lint ~/bin/
 	install -m 755 $(BIN_DIR)/mcp-lint-go ~/bin/
+	install -m 755 $(BIN_DIR)/mcp-lint-cli ~/bin/
 	@test -f $(BIN_DIR)/mcp-lint-rs && install -m 755 $(BIN_DIR)/mcp-lint-rs ~/bin/ || true
 	@test -f $(BIN_DIR)/mcp-lint-ts && install -m 755 $(BIN_DIR)/mcp-lint-ts ~/bin/ || true
 	@test -f $(BIN_DIR)/mcp-lint-cpp && install -m 755 $(BIN_DIR)/mcp-lint-cpp ~/bin/ || true

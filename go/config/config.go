@@ -36,9 +36,10 @@ type GoConfig struct {
 
 // RustConfig holds Rust-specific settings.
 type RustConfig struct {
-	ForbidUnwrap bool `yaml:"forbid_unwrap"`
-	ForbidExpect bool `yaml:"forbid_expect"`
-	ForbidPanic  bool `yaml:"forbid_panic"`
+	ForbidUnwrap   bool `yaml:"forbid_unwrap"`
+	ForbidExpect   bool `yaml:"forbid_expect"`
+	ForbidPanic    bool `yaml:"forbid_panic"`
+	ForbidDeepPath bool `yaml:"forbid_deep_path"`
 }
 
 // TypeScriptConfig holds TypeScript-specific settings.
@@ -47,18 +48,22 @@ type TypeScriptConfig struct {
 	ForbidClassComponents bool `yaml:"forbid_class_components"`
 	ForbidWaitForTimeout  bool `yaml:"forbid_wait_for_timeout"`
 	ForbidEmptyCatch      bool `yaml:"forbid_empty_catch"`
+	ForbidDeepAccess      bool `yaml:"forbid_deep_access"`
 }
 
 // CppConfig holds C++-specific settings.
 type CppConfig struct {
-	ForbidRawNew    bool `yaml:"forbid_raw_new"`
-	ForbidCCasts    bool `yaml:"forbid_c_casts"`
-	ForbidEmptyCatch bool `yaml:"forbid_empty_catch"`
+	ForbidRawNew       bool `yaml:"forbid_raw_new"`
+	ForbidCCasts       bool `yaml:"forbid_c_casts"`
+	ForbidEmptyCatch   bool `yaml:"forbid_empty_catch"`
+	ForbidDeepQualified bool `yaml:"forbid_deep_qualified"`
 }
 
 // JavaConfig holds Java-specific settings.
 type JavaConfig struct {
-	ForbidRawTypes bool `yaml:"forbid_raw_types"`
+	ForbidRawTypes   bool `yaml:"forbid_raw_types"`
+	ForbidPublicFields bool `yaml:"forbid_public_fields"`
+	ForbidDeepAccess bool `yaml:"forbid_deep_access"`
 }
 
 // Defaults returns the default configuration.
@@ -71,10 +76,10 @@ func Defaults() *Config {
 		MaxConsecutiveSameType: 2,
 		MaxCodeLinesPerFile:    240,
 		Go:         GoConfig{ForbidPanic: true, ForbidTypeAssertions: true, ForbidExportedFields: true, ForbidSwallowedErrors: true, MaxTypesPerFile: 1},
-		Rust:       RustConfig{ForbidUnwrap: true, ForbidExpect: true, ForbidPanic: true},
-		TypeScript: TypeScriptConfig{ForbidAny: true, ForbidClassComponents: true, ForbidWaitForTimeout: true, ForbidEmptyCatch: true},
-		Cpp:        CppConfig{ForbidRawNew: true, ForbidCCasts: true, ForbidEmptyCatch: true},
-		Java:       JavaConfig{ForbidRawTypes: true},
+		Rust:       RustConfig{ForbidUnwrap: true, ForbidExpect: true, ForbidPanic: true, ForbidDeepPath: true},
+		TypeScript: TypeScriptConfig{ForbidAny: true, ForbidClassComponents: true, ForbidWaitForTimeout: true, ForbidEmptyCatch: true, ForbidDeepAccess: true},
+		Cpp:        CppConfig{ForbidRawNew: true, ForbidCCasts: true, ForbidEmptyCatch: true, ForbidDeepQualified: true},
+		Java:       JavaConfig{ForbidRawTypes: true, ForbidPublicFields: true, ForbidDeepAccess: true},
 	}
 }
 

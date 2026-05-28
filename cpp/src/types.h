@@ -21,6 +21,7 @@ struct Config {
     bool forbid_c_casts = true;
     bool forbid_public_members = true;
     bool forbid_empty_catch = true;
+    bool forbid_deep_qualified = true;
     int max_classes_per_file = 1;
 };
 

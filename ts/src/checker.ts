@@ -69,6 +69,24 @@ export function check(path: string, cfg: Config): Violation[] {
       }
     }
 
+    if (cfg.typescript.forbid_deep_access && ts.isQualifiedName(node)) {
+      let depth = 0;
+      let cur: ts.Node = node;
+      while (ts.isQualifiedName(cur)) {
+        depth++;
+        cur = (cur as ts.QualifiedName).left;
+      }
+      if (depth >= 2) {
+        const text = node.getText(sourceFile);
+        violations.push({
+          line: getLine(node, sourceFile),
+          rule: "no-deep-access",
+          message: `${text}: use an import instead of fully qualified name`,
+          severity: "error",
+        });
+      }
+    }
+
     ts.forEachChild(node, visit);
   };
 

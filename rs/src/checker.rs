@@ -252,6 +252,27 @@ impl<'a> Visit<'a> for UnwrapFinder<'a> {
         self.check_panic_macro(&node.mac);
         syn::visit::visit_stmt_macro(self, node);
     }
+
+    fn visit_path(&mut self, node: &'a syn::Path) {
+        if self.cfg.rust.forbid_deep_path && node.segments.len() > 2 {
+            let line = node.span().start().line;
+            let path_str: String = node
+                .segments
+                .iter()
+                .map(|s| s.ident.to_string())
+                .collect::<Vec<_>>()
+                .join("::");
+            self.violations.push(Violation {
+                line,
+                rule: "no-deep-path".into(),
+                message: format!(
+                    "{path_str}: use a `use` import instead of fully qualified path"
+                ),
+                severity: "error".into(),
+            });
+        }
+        syn::visit::visit_path(self, node);
+    }
 }
 
 impl<'a> UnwrapFinder<'a> {
@@ -445,6 +466,26 @@ mod tests {
         assert!(
             v.iter().any(|v| v.rule == "line-width"),
             "expected line-width: {v:?}"
+        );
+    }
+
+    #[test]
+    fn test_deep_path() {
+        let src = "fn bad() {\n    let _ = std::collections::HashMap::new();\n}\n";
+        let v = check(src, "lib.rs", &cfg());
+        assert!(
+            v.iter().any(|v| v.rule == "no-deep-path"),
+            "expected no-deep-path: {v:?}"
+        );
+    }
+
+    #[test]
+    fn test_shallow_path_ok() {
+        let src = "fn ok() {\n    let _ = Vec::new();\n}\n";
+        let v = check(src, "lib.rs", &cfg());
+        assert!(
+            !v.iter().any(|v| v.rule == "no-deep-path"),
+            "single :: should be allowed: {v:?}"
         );
     }
 }

@@ -12,6 +12,7 @@ public final class Config {
     public static final class JavaConfig {
         public boolean forbid_raw_types = true;
         public boolean forbid_public_fields = true;
+        public boolean forbid_deep_access = true;
         public int max_classes_per_file = 1;
     }
 }

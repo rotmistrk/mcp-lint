@@ -8,6 +8,8 @@ import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
 import com.github.javaparser.ast.body.ConstructorDeclaration;
 import com.github.javaparser.ast.body.FieldDeclaration;
 import com.github.javaparser.ast.body.MethodDeclaration;
+import com.github.javaparser.ast.expr.FieldAccessExpr;
+import com.github.javaparser.ast.expr.NameExpr;
 import com.github.javaparser.ast.stmt.*;
 import com.github.javaparser.ast.type.ClassOrInterfaceType;
 
@@ -38,6 +40,9 @@ public final class Checker {
             checkPublicFields(cu, violations);
         }
         checkClassCount(cu, cfg, violations);
+        if (cfg.java.forbid_deep_access) {
+            checkDeepAccess(cu, violations);
+        }
         return violations;
     }
 
@@ -178,6 +183,25 @@ public final class Checker {
                     "file has " + topLevel + " top-level classes (max " + cfg.java.max_classes_per_file + ")",
                     "error"));
         }
+    }
+
+    private static void checkDeepAccess(CompilationUnit cu, List<Violation> violations) {
+        cu.findAll(FieldAccessExpr.class).forEach(fa -> {
+            // Count depth: a.b = 1, a.b.c = 2
+            int depth = 0;
+            var scope = fa.getScope();
+            while (scope instanceof FieldAccessExpr inner) {
+                depth++;
+                scope = inner.getScope();
+            }
+            if (depth >= 2 && scope instanceof NameExpr) {
+                int line = fa.getBegin().map(p -> p.line).orElse(0);
+                violations.add(new Violation(
+                        line, "no-deep-access",
+                        fa.toString() + ": use an import instead of fully qualified name",
+                        "error"));
+            }
+        });
     }
 
     private static boolean isGenericType(String name) {

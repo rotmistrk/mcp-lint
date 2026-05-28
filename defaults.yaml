@@ -21,6 +21,7 @@ rust:
   forbid_expect: true
   forbid_panic: true
   forbid_pub_fields: true
+  forbid_deep_path: true
   max_structs_per_file: 1
 
 typescript:
@@ -29,6 +30,7 @@ typescript:
   forbid_wait_for_timeout: true
   forbid_public_properties: true
   forbid_empty_catch: true
+  forbid_deep_access: true
   max_classes_per_file: 1
 
 cpp:
@@ -36,9 +38,11 @@ cpp:
   forbid_c_casts: true
   forbid_public_members: true
   forbid_empty_catch: true
+  forbid_deep_qualified: true
   max_classes_per_file: 1
 
 java:
   forbid_raw_types: true
   forbid_public_fields: true
+  forbid_deep_access: true
   max_classes_per_file: 1

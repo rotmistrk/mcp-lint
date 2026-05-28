@@ -265,6 +265,23 @@ static CXChildVisitResult root_visitor(
                 });
             }
         }
+        if (ctx->cfg->forbid_deep_qualified &&
+            (kind == CXCursor_DeclRefExpr || kind == CXCursor_TypeRef)) {
+            auto display = clang_getCursorDisplayName(c);
+            std::string name = clang_getCString(display);
+            clang_disposeString(display);
+            int colons = 0;
+            for (size_t i = 0; i + 1 < name.size(); ++i) {
+                if (name[i] == ':' && name[i + 1] == ':') { ++colons; ++i; }
+            }
+            if (colons >= 2) {
+                ctx->violations->push_back({
+                    get_line(c), "no-deep-qualified",
+                    name + ": use a using/namespace import instead of fully qualified name",
+                    "error"
+                });
+            }
+        }
     }
 
     return CXChildVisit_Recurse;
