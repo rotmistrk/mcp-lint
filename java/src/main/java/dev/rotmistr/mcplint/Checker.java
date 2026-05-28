@@ -43,6 +43,9 @@ public final class Checker {
         if (cfg.java.forbid_deep_access) {
             checkDeepAccess(cu, violations);
         }
+        if (cfg.java.forbid_concrete_deps) {
+            ConcreteDepsChecker.check(cu, violations);
+        }
         return violations;
     }
 

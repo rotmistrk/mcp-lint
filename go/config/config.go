@@ -31,6 +31,7 @@ type GoConfig struct {
 	ForbidTypeAssertions  bool `yaml:"forbid_type_assertions"`
 	ForbidExportedFields  bool `yaml:"forbid_exported_fields"`
 	ForbidSwallowedErrors bool `yaml:"forbid_swallowed_errors"`
+	ForbidConcreteDeps    bool `yaml:"forbid_concrete_deps"`
 	MaxTypesPerFile       int  `yaml:"max_types_per_file"`
 }
 
@@ -61,9 +62,10 @@ type CppConfig struct {
 
 // JavaConfig holds Java-specific settings.
 type JavaConfig struct {
-	ForbidRawTypes   bool `yaml:"forbid_raw_types"`
+	ForbidRawTypes     bool `yaml:"forbid_raw_types"`
 	ForbidPublicFields bool `yaml:"forbid_public_fields"`
-	ForbidDeepAccess bool `yaml:"forbid_deep_access"`
+	ForbidDeepAccess   bool `yaml:"forbid_deep_access"`
+	ForbidConcreteDeps bool `yaml:"forbid_concrete_deps"`
 }
 
 // Defaults returns the default configuration.
@@ -75,11 +77,11 @@ func Defaults() *Config {
 		MaxParams:              7,
 		MaxConsecutiveSameType: 2,
 		MaxCodeLinesPerFile:    240,
-		Go:         GoConfig{ForbidPanic: true, ForbidTypeAssertions: true, ForbidExportedFields: true, ForbidSwallowedErrors: true, MaxTypesPerFile: 1},
+		Go:         GoConfig{ForbidPanic: true, ForbidTypeAssertions: true, ForbidExportedFields: true, ForbidSwallowedErrors: true, ForbidConcreteDeps: true, MaxTypesPerFile: 1},
 		Rust:       RustConfig{ForbidUnwrap: true, ForbidExpect: true, ForbidPanic: true, ForbidDeepPath: true},
 		TypeScript: TypeScriptConfig{ForbidAny: true, ForbidClassComponents: true, ForbidWaitForTimeout: true, ForbidEmptyCatch: true, ForbidDeepAccess: true},
 		Cpp:        CppConfig{ForbidRawNew: true, ForbidCCasts: true, ForbidEmptyCatch: true, ForbidDeepQualified: true},
-		Java:       JavaConfig{ForbidRawTypes: true, ForbidPublicFields: true, ForbidDeepAccess: true},
+		Java:       JavaConfig{ForbidRawTypes: true, ForbidPublicFields: true, ForbidDeepAccess: true, ForbidConcreteDeps: true},
 	}
 }
 

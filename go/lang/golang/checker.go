@@ -44,6 +44,9 @@ func Check(path string, cfg *config.Config) ([]checks.Violation, error) {
 		if cfg.Go.ForbidSwallowedErrors {
 			violations = append(violations, checkSwallowedErrors(fset, file)...)
 		}
+		if cfg.Go.ForbidConcreteDeps {
+			violations = append(violations, checkConcreteDeps(fset, file)...)
+		}
 	}
 	violations = append(violations, checkFunctions(fset, file, cfg)...)
 	violations = append(violations, checkTypeCount(fset, file, cfg)...)
