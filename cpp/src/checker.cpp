@@ -1,6 +1,7 @@
 #include "checker.h"
 
 #include <clang-c/Index.h>
+#include <cstdlib>
 #include <fstream>
 #include <string>
 #include <vector>
@@ -65,6 +66,7 @@ struct CheckContext {
     std::vector<Violation>* violations;
     bool is_test;
     int class_count;
+    std::string file_path;
 };
 
 static int get_line(CXCursor cursor) {
@@ -81,6 +83,24 @@ static std::string get_spelling(CXCursor cursor) {
     std::string result = clang_getCString(name);
     clang_disposeString(name);
     return result;
+}
+
+static bool cursor_in_file(CXCursor cursor, const std::string& file_path) {
+    CXFile file = nullptr;
+    clang_getSpellingLocation(
+        clang_getCursorLocation(cursor),
+        &file, nullptr, nullptr, nullptr
+    );
+    if (!file) return false;
+    auto name = clang_getFileName(file);
+    std::string cursor_path = clang_getCString(name);
+    clang_disposeString(name);
+    char* resolved = realpath(cursor_path.c_str(), nullptr);
+    if (resolved) {
+        cursor_path = resolved;
+        free(resolved);
+    }
+    return cursor_path == file_path;
 }
 
 static int cursor_end_line(CXCursor cursor) {
@@ -216,7 +236,7 @@ static CXChildVisitResult root_visitor(
 
     // Count classes/structs and check public members
     if (kind == CXCursor_ClassDecl || kind == CXCursor_StructDecl) {
-        if (clang_isCursorDefinition(c)) {
+        if (clang_isCursorDefinition(c) && cursor_in_file(c, ctx->file_path)) {
             ctx->class_count++;
             if (!ctx->is_test && ctx->cfg->forbid_public_members) {
                 clang_visitChildren(c, member_visitor, ctx);
@@ -313,7 +333,14 @@ std::vector<Violation> check_file(
         return violations;
     }
 
-    CheckContext ctx{&cfg, &violations, is_test, 0};
+    CheckContext ctx{&cfg, &violations, is_test, 0, ""};
+    char* resolved = realpath(path.c_str(), nullptr);
+    if (resolved) {
+        ctx.file_path = resolved;
+        free(resolved);
+    } else {
+        ctx.file_path = path;
+    }
     clang_visitChildren(clang_getTranslationUnitCursor(tu), root_visitor, &ctx);
 
     if (cfg.max_classes_per_file > 0 && ctx.class_count > cfg.max_classes_per_file) {
