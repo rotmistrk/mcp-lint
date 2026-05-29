@@ -239,7 +239,10 @@ static CXChildVisitResult root_visitor(
         if (clang_isCursorDefinition(c) && cursor_in_file(c, ctx->file_path)) {
             ctx->class_count++;
             if (!ctx->is_test && ctx->cfg->forbid_public_members) {
-                clang_visitChildren(c, member_visitor, ctx);
+                auto access = clang_getCXXAccessSpecifier(c);
+                if (access != CX_CXXPrivate) {
+                    clang_visitChildren(c, member_visitor, ctx);
+                }
             }
         }
     }

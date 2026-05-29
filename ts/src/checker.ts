@@ -209,6 +209,11 @@ function checkPublicProperties(
   sourceFile: ts.SourceFile,
   violations: Violation[],
 ): void {
+  const mods = ts.getModifiers(node);
+  const isExported = mods?.some(
+    (m) => m.kind === ts.SyntaxKind.ExportKeyword,
+  );
+  if (!isExported) return;
   const className = node.name?.getText(sourceFile) ?? "(anonymous)";
   for (const member of node.members) {
     if (!ts.isPropertyDeclaration(member)) continue;

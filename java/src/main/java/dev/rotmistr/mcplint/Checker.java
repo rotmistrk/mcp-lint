@@ -163,6 +163,7 @@ public final class Checker {
             String className = "(unknown)";
             if (parent instanceof ClassOrInterfaceDeclaration cid) {
                 className = cid.getNameAsString();
+                if (cid.hasModifier(Modifier.Keyword.PRIVATE)) return;
             }
             for (var variable : field.getVariables()) {
                 int line = variable.getBegin().map(p -> p.line).orElse(0);

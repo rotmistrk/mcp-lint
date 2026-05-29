@@ -183,7 +183,7 @@ impl<'a> Visit<'a> for RustVisitor<'a> {
 
     fn visit_item_struct(&mut self, node: &'a ItemStruct) {
         self.struct_count += 1;
-        if self.cfg.rust.forbid_pub_fields {
+        if self.cfg.rust.forbid_pub_fields && !matches!(node.vis, Visibility::Inherited) {
             let struct_name = node.ident.to_string();
             for field in &node.fields {
                 if matches!(field.vis, Visibility::Public(_)) {
