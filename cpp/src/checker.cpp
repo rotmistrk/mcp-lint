@@ -223,6 +223,10 @@ static CXChildVisitResult root_visitor(
     CXCursor c, CXCursor, CXClientData ud
 ) {
     auto* ctx = static_cast<CheckContext*>(ud);
+
+    // Skip anything not in the file being checked
+    if (!cursor_in_file(c, ctx->file_path)) return CXChildVisit_Continue;
+
     auto kind = clang_getCursorKind(c);
 
     // Check functions/methods
@@ -236,7 +240,7 @@ static CXChildVisitResult root_visitor(
 
     // Count classes/structs and check public members
     if (kind == CXCursor_ClassDecl || kind == CXCursor_StructDecl) {
-        if (clang_isCursorDefinition(c) && cursor_in_file(c, ctx->file_path)) {
+        if (clang_isCursorDefinition(c)) {
             ctx->class_count++;
             if (!ctx->is_test && ctx->cfg->forbid_public_members) {
                 auto access = clang_getCXXAccessSpecifier(c);
