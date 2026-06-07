@@ -13,12 +13,14 @@ import (
 
 	"github.com/rotmistrk/mcp-lint/go/checks"
 	"github.com/rotmistrk/mcp-lint/go/config"
+	"github.com/rotmistrk/mcp-lint/go/fix"
 	"github.com/rotmistrk/mcp-lint/go/lang/dispatch"
 )
 
 func main() {
 	s := server.NewMCPServer("mcp-lint", "0.1.0")
 	registerCheckFile(s)
+	registerFixViolation(s)
 
 	stdio := server.NewStdioServer(s)
 	if err := stdio.Listen(context.Background(), os.Stdin, os.Stdout); err != nil {
@@ -103,4 +105,54 @@ func errResult(format string, args ...any) *mcp.CallToolResult {
 		},
 		IsError: true,
 	}
+}
+
+func registerFixViolation(s *server.MCPServer) {
+	s.AddTool(
+		mcp.NewTool(
+			"fix_violation",
+			mcp.WithDescription(
+				"Auto-fix a lint violation. Supports: no-public-fields, no-mutable-getters. "+
+					"Modifies the source file in place.",
+			),
+			mcp.WithString("path", mcp.Required(), mcp.Description("Path to the source file")),
+			mcp.WithNumber("line", mcp.Required(), mcp.Description("Line number of the violation")),
+			mcp.WithString("rule", mcp.Required(), mcp.Description("Rule name (e.g. no-public-fields)")),
+		),
+		handleFixViolation,
+	)
+}
+
+func handleFixViolation(
+	ctx context.Context,
+	req mcp.CallToolRequest,
+) (*mcp.CallToolResult, error) {
+	path, ok := requireString(req, "path")
+	if !ok {
+		return errResult("missing required argument: path"), nil
+	}
+	rule, ok := requireString(req, "rule")
+	if !ok {
+		return errResult("missing required argument: rule"), nil
+	}
+	lineVal, ok := req.GetArguments()["line"]
+	if !ok {
+		return errResult("missing required argument: line"), nil
+	}
+	lineNum, ok := lineVal.(float64)
+	if !ok {
+		return errResult("line must be a number"), nil
+	}
+
+	result, err := fix.Fix(path, int(lineNum), rule)
+	if err != nil {
+		return errResult("fix failed: %v", err), nil
+	}
+
+	var sb strings.Builder
+	sb.WriteString(result.Diff)
+	if result.Warning != "" {
+		sb.WriteString("\n\n⚠️  " + result.Warning)
+	}
+	return textResult(sb.String()), nil
 }
