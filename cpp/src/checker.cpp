@@ -238,6 +238,28 @@ static CXChildVisitResult root_visitor(
         }
     }
 
+    // Check mutable getters (methods returning non-const ref/ptr)
+    if (!ctx->is_test && ctx->cfg->forbid_mutable_getters &&
+        kind == CXCursor_CXXMethod && clang_isCursorDefinition(c)) {
+        // Skip methods in private inner classes
+        CXCursor parent = clang_getCursorSemanticParent(c);
+        if (clang_getCXXAccessSpecifier(parent) != CX_CXXPrivate) {
+            CXType ret = clang_getCursorResultType(c);
+            if (ret.kind == CXType_LValueReference || ret.kind == CXType_Pointer) {
+                CXType pointee = clang_getPointeeType(ret);
+                if (!clang_isConstQualifiedType(pointee)) {
+                    auto name = get_spelling(c);
+                    ctx->violations->push_back({
+                        get_line(c), "no-mutable-getters",
+                        name + ": returns mutable reference/pointer to internal state; "
+                        "return const reference or value instead",
+                        "error"
+                    });
+                }
+            }
+        }
+    }
+
     // Count classes/structs and check public members
     if (kind == CXCursor_ClassDecl || kind == CXCursor_StructDecl) {
         if (clang_isCursorDefinition(c)) {

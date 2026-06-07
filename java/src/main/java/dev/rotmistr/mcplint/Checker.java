@@ -43,6 +43,9 @@ public final class Checker {
         if (cfg.java.forbid_deep_access) {
             checkDeepAccess(cu, violations);
         }
+        if (cfg.java.forbid_mutable_getters) {
+            checkMutableGetters(cu, violations);
+        }
         if (cfg.java.forbid_concrete_deps) {
             ConcreteDepsChecker.check(cu, violations);
         }
@@ -206,6 +209,39 @@ public final class Checker {
                         "error"));
             }
         });
+    }
+
+    private static void checkMutableGetters(CompilationUnit cu, List<Violation> violations) {
+        cu.findAll(MethodDeclaration.class).forEach(m -> {
+            if (m.getType().isVoidType()) return;
+            // Skip methods in private inner classes
+            var parent = m.getParentNode().orElse(null);
+            if (parent instanceof ClassOrInterfaceDeclaration cid) {
+                if (cid.hasModifier(Modifier.Keyword.PRIVATE)) return;
+            }
+            String returnType = m.getType().asString();
+            // Strip generics for matching
+            String base = returnType.contains("<") ? returnType.substring(0, returnType.indexOf('<')) : returnType;
+            if (isMutableCollectionType(base)) {
+                int line = m.getBegin().map(p -> p.line).orElse(0);
+                violations.add(new Violation(
+                        line, "no-mutable-getters",
+                        m.getNameAsString() + " returns mutable " + base +
+                                "; return unmodifiable view or copy instead",
+                        "error"));
+            }
+        });
+    }
+
+    private static boolean isMutableCollectionType(String name) {
+        return switch (name) {
+            case "List", "ArrayList", "LinkedList",
+                 "Map", "HashMap", "TreeMap", "LinkedHashMap",
+                 "Set", "HashSet", "TreeSet", "LinkedHashSet",
+                 "Collection", "Queue", "Deque", "ArrayDeque",
+                 "PriorityQueue" -> true;
+            default -> false;
+        };
     }
 
     private static boolean isGenericType(String name) {

@@ -19,6 +19,7 @@ export interface Config {
     forbid_public_properties: boolean;
     forbid_empty_catch: boolean;
     forbid_deep_access: boolean;
+    forbid_mutable_getters: boolean;
     max_classes_per_file: number;
   };
 }
@@ -37,6 +38,7 @@ export const defaults: Config = {
     forbid_public_properties: true,
     forbid_empty_catch: true,
     forbid_deep_access: true,
+    forbid_mutable_getters: true,
     max_classes_per_file: 1,
   },
 };

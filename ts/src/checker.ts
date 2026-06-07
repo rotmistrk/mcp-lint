@@ -51,6 +51,9 @@ export function check(path: string, cfg: Config): Violation[] {
       if (cfg.typescript.forbid_public_properties) {
         checkPublicProperties(node, sourceFile, violations);
       }
+      if (cfg.typescript.forbid_mutable_getters) {
+        checkMutableGetters(node, sourceFile, violations);
+      }
     }
 
     if (isTest && cfg.typescript.forbid_wait_for_timeout) {
@@ -232,6 +235,40 @@ function checkPublicProperties(
       message: `${className}.${name}: public properties break encapsulation; use private`,
       severity: "error",
     });
+  }
+}
+
+function checkMutableGetters(
+  node: ts.ClassDeclaration,
+  sourceFile: ts.SourceFile,
+  violations: Violation[],
+): void {
+  const mods = ts.getModifiers(node);
+  const isExported = mods?.some(
+    (m) => m.kind === ts.SyntaxKind.ExportKeyword,
+  );
+  if (!isExported) return;
+  for (const member of node.members) {
+    if (!ts.isMethodDeclaration(member) && !ts.isGetAccessor(member)) continue;
+    const returnType = member.type;
+    if (!returnType) continue;
+    const typeText = returnType.getText(sourceFile);
+    // Flag array types that aren't readonly
+    if (
+      (typeText.endsWith("[]") && !typeText.startsWith("readonly ")) ||
+      /^Array</.test(typeText) ||
+      /^Map</.test(typeText) ||
+      /^Set</.test(typeText)
+    ) {
+      const name =
+        member.name?.getText(sourceFile) ?? "(anonymous)";
+      violations.push({
+        line: getLine(member, sourceFile),
+        rule: "no-mutable-getters",
+        message: `${name}: returns mutable ${typeText}; use readonly array or ReadonlyMap/ReadonlySet`,
+        severity: "error",
+      });
+    }
   }
 }
 

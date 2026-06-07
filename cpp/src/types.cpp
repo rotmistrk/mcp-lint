@@ -66,6 +66,7 @@ Config parse_config_json(const std::string& json) {
     cfg.forbid_public_members = json_bool(json, "forbid_public_members", true);
     cfg.forbid_empty_catch = json_bool(json, "forbid_empty_catch", true);
     cfg.forbid_deep_qualified = json_bool(json, "forbid_deep_qualified", true);
+    cfg.forbid_mutable_getters = json_bool(json, "forbid_mutable_getters", true);
     cfg.max_classes_per_file = json_int(json, "max_classes_per_file", 1);
     return cfg;
 }

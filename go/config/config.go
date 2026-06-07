@@ -50,22 +50,25 @@ type TypeScriptConfig struct {
 	ForbidWaitForTimeout  bool `yaml:"forbid_wait_for_timeout"`
 	ForbidEmptyCatch      bool `yaml:"forbid_empty_catch"`
 	ForbidDeepAccess      bool `yaml:"forbid_deep_access"`
+	ForbidMutableGetters  bool `yaml:"forbid_mutable_getters"`
 }
 
 // CppConfig holds C++-specific settings.
 type CppConfig struct {
-	ForbidRawNew       bool `yaml:"forbid_raw_new"`
-	ForbidCCasts       bool `yaml:"forbid_c_casts"`
-	ForbidEmptyCatch   bool `yaml:"forbid_empty_catch"`
-	ForbidDeepQualified bool `yaml:"forbid_deep_qualified"`
+	ForbidRawNew         bool `yaml:"forbid_raw_new"`
+	ForbidCCasts         bool `yaml:"forbid_c_casts"`
+	ForbidEmptyCatch     bool `yaml:"forbid_empty_catch"`
+	ForbidDeepQualified  bool `yaml:"forbid_deep_qualified"`
+	ForbidMutableGetters bool `yaml:"forbid_mutable_getters"`
 }
 
 // JavaConfig holds Java-specific settings.
 type JavaConfig struct {
-	ForbidRawTypes     bool `yaml:"forbid_raw_types"`
-	ForbidPublicFields bool `yaml:"forbid_public_fields"`
-	ForbidDeepAccess   bool `yaml:"forbid_deep_access"`
-	ForbidConcreteDeps bool `yaml:"forbid_concrete_deps"`
+	ForbidRawTypes       bool `yaml:"forbid_raw_types"`
+	ForbidPublicFields   bool `yaml:"forbid_public_fields"`
+	ForbidDeepAccess     bool `yaml:"forbid_deep_access"`
+	ForbidConcreteDeps   bool `yaml:"forbid_concrete_deps"`
+	ForbidMutableGetters bool `yaml:"forbid_mutable_getters"`
 }
 
 // Defaults returns the default configuration.
@@ -79,9 +82,9 @@ func Defaults() *Config {
 		MaxCodeLinesPerFile:    240,
 		Go:         GoConfig{ForbidPanic: true, ForbidTypeAssertions: true, ForbidExportedFields: true, ForbidSwallowedErrors: true, ForbidConcreteDeps: true, MaxTypesPerFile: 1},
 		Rust:       RustConfig{ForbidUnwrap: true, ForbidExpect: true, ForbidPanic: true, ForbidDeepPath: true},
-		TypeScript: TypeScriptConfig{ForbidAny: true, ForbidClassComponents: true, ForbidWaitForTimeout: true, ForbidEmptyCatch: true, ForbidDeepAccess: true},
-		Cpp:        CppConfig{ForbidRawNew: true, ForbidCCasts: true, ForbidEmptyCatch: true, ForbidDeepQualified: true},
-		Java:       JavaConfig{ForbidRawTypes: true, ForbidPublicFields: true, ForbidDeepAccess: true, ForbidConcreteDeps: true},
+		TypeScript: TypeScriptConfig{ForbidAny: true, ForbidClassComponents: true, ForbidWaitForTimeout: true, ForbidEmptyCatch: true, ForbidDeepAccess: true, ForbidMutableGetters: true},
+		Cpp:        CppConfig{ForbidRawNew: true, ForbidCCasts: true, ForbidEmptyCatch: true, ForbidDeepQualified: true, ForbidMutableGetters: true},
+		Java:       JavaConfig{ForbidRawTypes: true, ForbidPublicFields: true, ForbidDeepAccess: true, ForbidConcreteDeps: true, ForbidMutableGetters: true},
 	}
 }
 

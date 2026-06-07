@@ -14,6 +14,7 @@ public final class Config {
         public boolean forbid_public_fields = true;
         public boolean forbid_deep_access = true;
         public boolean forbid_concrete_deps = true;
+        public boolean forbid_mutable_getters = true;
         public int max_classes_per_file = 1;
     }
 }
