@@ -180,7 +180,7 @@ static void check_function(CXCursor cursor, CheckContext* ctx, bool is_construct
     if (params > ctx->cfg->max_params) {
         std::string severity = is_constructor ? "warning" : "error";
         std::string hint = is_constructor
-            ? "; consider a builder or parameter struct"
+            ? "; consider splitting the class into smaller cohesive types, or use a builder/parameter struct"
             : "; group related parameters into a struct, or extract common args into a separate interface";
         ctx->violations->push_back({
             start, "param-count",

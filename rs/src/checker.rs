@@ -127,7 +127,7 @@ impl<'a> RustVisitor<'a> {
 
         if params_count > self.cfg.max_params {
             let (severity, hint) = if is_constructor {
-                ("warning", "; consider a builder pattern or config struct")
+                ("warning", "; consider splitting the struct into smaller cohesive types, or use a builder/config struct")
             } else {
                 ("error", "; group related parameters into a struct, or extract common args into a separate trait")
             };

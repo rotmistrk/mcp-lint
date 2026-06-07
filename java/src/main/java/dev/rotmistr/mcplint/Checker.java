@@ -120,7 +120,7 @@ public final class Checker {
         if (params > cfg.max_params) {
             String severity = isConstructor ? "warning" : "error";
             String hint = isConstructor
-                    ? "; consider a builder pattern or parameter object"
+                    ? "; consider splitting the class into smaller cohesive types, or use a builder pattern"
                     : "; group related parameters into a record/class, or extract common args into a separate interface";
             violations.add(new Violation(
                     startLine, "param-count",
