@@ -40,7 +40,7 @@ pub fn check(source: &str, path: &str, cfg: &Config) -> Vec<Violation> {
             line: 1,
             rule: "max-structs-per-file".into(),
             message: format!(
-                "file has {} structs (max {})",
+                "file has {} structs (max {}); move each struct to its own file",
                 visitor.struct_count, visitor.cfg.rust.max_structs_per_file
             ),
             severity: "error".into(),
@@ -84,7 +84,7 @@ fn check_code_lines(source: &str, cfg: &Config) -> Vec<Violation> {
             line: 1,
             rule: "file-length".into(),
             message: format!(
-                "file has {} code lines (max {})",
+                "file has {} code lines (max {}); split into separate files by responsibility. Do NOT remove comments or blank lines to reduce count",
                 count, cfg.max_code_lines_per_file
             ),
             severity: "error".into(),
@@ -108,6 +108,7 @@ impl<'a> RustVisitor<'a> {
         start_line: usize,
         params_count: usize,
         block: &syn::Block,
+        is_constructor: bool,
     ) {
         let end_line = block_end_line(block, start_line);
         let length = end_line.saturating_sub(start_line).saturating_sub(1);
@@ -117,7 +118,7 @@ impl<'a> RustVisitor<'a> {
                 line: start_line,
                 rule: "method-length".into(),
                 message: format!(
-                    "{name} is {length} lines (max {})",
+                    "{name} is {length} lines (max {}); extract conceptually distinct steps into helper functions. Do NOT remove comments, collapse multi-line expressions, or remove blank lines",
                     self.cfg.max_method_length
                 ),
                 severity: "error".into(),
@@ -125,14 +126,19 @@ impl<'a> RustVisitor<'a> {
         }
 
         if params_count > self.cfg.max_params {
+            let (severity, hint) = if is_constructor {
+                ("warning", "; consider a builder pattern or config struct")
+            } else {
+                ("error", "; group related parameters into a struct, or extract common args into a separate trait")
+            };
             self.violations.push(Violation {
                 line: start_line,
                 rule: "param-count".into(),
                 message: format!(
-                    "{name} has {params_count} parameters (max {})",
+                    "{name} has {params_count} parameters (max {}){hint}",
                     self.cfg.max_params
                 ),
-                severity: "error".into(),
+                severity: severity.into(),
             });
         }
 
@@ -142,7 +148,7 @@ impl<'a> RustVisitor<'a> {
                 line: start_line,
                 rule: "nesting-depth".into(),
                 message: format!(
-                    "{name} has nesting depth {depth} (max {})",
+                    "{name} has nesting depth {depth} (max {}); extract loop bodies or branch bodies into named helper functions",
                     self.cfg.max_nesting_depth
                 ),
                 severity: "error".into(),
@@ -169,7 +175,7 @@ impl<'a> Visit<'a> for RustVisitor<'a> {
         let name = node.sig.ident.to_string();
         let start = node.sig.ident.span().start().line;
         let params = node.sig.inputs.len();
-        self.check_fn(&name, start, params, &node.block);
+        self.check_fn(&name, start, params, &node.block, false);
         syn::visit::visit_item_fn(self, node);
     }
 
@@ -177,7 +183,7 @@ impl<'a> Visit<'a> for RustVisitor<'a> {
         let name = node.sig.ident.to_string();
         let start = node.sig.ident.span().start().line;
         let params = node.sig.inputs.len();
-        self.check_fn(&name, start, params, &node.block);
+        self.check_fn(&name, start, params, &node.block, name == "new");
         syn::visit::visit_impl_item_fn(self, node);
     }
 

@@ -185,7 +185,7 @@ func checkOneFunction(
 		violations = append(violations, checks.Violation{
 			Line:     fset.Position(fn.Pos()).Line,
 			Rule:     "method-length",
-			Message:  fmt.Sprintf("%s is %d lines (max %d)", name, length, cfg.MaxMethodLength),
+			Message:  fmt.Sprintf("%s is %d lines (max %d); extract conceptually distinct steps into helper functions. Do NOT remove comments, collapse multi-line expressions, or remove blank lines", name, length, cfg.MaxMethodLength),
 			Severity: "error",
 		})
 	}
@@ -195,7 +195,7 @@ func checkOneFunction(
 		violations = append(violations, checks.Violation{
 			Line:     fset.Position(fn.Pos()).Line,
 			Rule:     "nesting-depth",
-			Message:  fmt.Sprintf("%s has nesting depth %d (max %d)", name, maxDepth, cfg.MaxNestingDepth),
+			Message:  fmt.Sprintf("%s has nesting depth %d (max %d); extract loop bodies or branch bodies into named helper functions", name, maxDepth, cfg.MaxNestingDepth),
 			Severity: "error",
 		})
 	}
@@ -241,7 +241,7 @@ func checkParams(
 		violations = append(violations, checks.Violation{
 			Line:     fset.Position(fn.Pos()).Line,
 			Rule:     "param-count",
-			Message:  fmt.Sprintf("%s has %d parameters (max %d)", fn.Name.Name, total, cfg.MaxParams),
+			Message:  fmt.Sprintf("%s has %d parameters (max %d); group related parameters into a struct, or extract common args into a separate interface", fn.Name.Name, total, cfg.MaxParams),
 			Severity: "error",
 		})
 	}
@@ -338,7 +338,7 @@ func checkCodeLines(src []byte, cfg *config.Config) []checks.Violation {
 		return []checks.Violation{{
 			Line:     1,
 			Rule:     "file-length",
-			Message:  fmt.Sprintf("file has %d code lines (max %d)", count, cfg.MaxCodeLinesPerFile),
+			Message:  fmt.Sprintf("file has %d code lines (max %d); split into separate files by responsibility. Do NOT remove comments or blank lines to reduce count", count, cfg.MaxCodeLinesPerFile),
 			Severity: "error",
 		}}
 	}
@@ -401,7 +401,7 @@ func checkTypeCount(
 		return []checks.Violation{{
 			Line:     1,
 			Rule:     "max-types-per-file",
-			Message:  fmt.Sprintf("file has %d type declarations (max %d)", count, cfg.Go.MaxTypesPerFile),
+			Message:  fmt.Sprintf("file has %d type declarations (max %d); move each type to its own file", count, cfg.Go.MaxTypesPerFile),
 			Severity: "error",
 		}}
 	}

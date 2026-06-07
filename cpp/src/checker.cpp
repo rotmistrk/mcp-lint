@@ -52,7 +52,9 @@ static std::vector<Violation> check_code_lines(
         return {{
             1, "file-length",
             "file has " + std::to_string(count) +
-                " code lines (max " + std::to_string(cfg.max_code_lines_per_file) + ")",
+                " code lines (max " + std::to_string(cfg.max_code_lines_per_file) +
+                "); split into separate files by responsibility. "
+                "Do NOT remove comments or blank lines to reduce count",
             "error"
         }};
     }
@@ -155,7 +157,7 @@ static int compute_nesting(CXCursor cursor) {
 
 // --- Function checks ---
 
-static void check_function(CXCursor cursor, CheckContext* ctx) {
+static void check_function(CXCursor cursor, CheckContext* ctx, bool is_constructor) {
     auto name = get_spelling(cursor);
     if (name.empty()) name = "(anonymous)";
 
@@ -167,18 +169,24 @@ static void check_function(CXCursor cursor, CheckContext* ctx) {
         ctx->violations->push_back({
             start, "method-length",
             name + " is " + std::to_string(length) +
-                " lines (max " + std::to_string(ctx->cfg->max_method_length) + ")",
+                " lines (max " + std::to_string(ctx->cfg->max_method_length) +
+                "); extract conceptually distinct steps into helper methods. "
+                "Do NOT remove comments, collapse multi-line expressions, or remove blank lines",
             "error"
         });
     }
 
     int params = clang_Cursor_getNumArguments(cursor);
     if (params > ctx->cfg->max_params) {
+        std::string severity = is_constructor ? "warning" : "error";
+        std::string hint = is_constructor
+            ? "; consider a builder or parameter struct"
+            : "; group related parameters into a struct, or extract common args into a separate interface";
         ctx->violations->push_back({
             start, "param-count",
             name + " has " + std::to_string(params) +
-                " parameters (max " + std::to_string(ctx->cfg->max_params) + ")",
-            "error"
+                " parameters (max " + std::to_string(ctx->cfg->max_params) + ")" + hint,
+            severity
         });
     }
 
@@ -187,7 +195,8 @@ static void check_function(CXCursor cursor, CheckContext* ctx) {
         ctx->violations->push_back({
             start, "nesting-depth",
             name + " has nesting depth " + std::to_string(depth) +
-                " (max " + std::to_string(ctx->cfg->max_nesting_depth) + ")",
+                " (max " + std::to_string(ctx->cfg->max_nesting_depth) +
+                "); extract loop bodies or branch bodies into named helper methods",
             "error"
         });
     }
@@ -234,7 +243,7 @@ static CXChildVisitResult root_visitor(
         kind == CXCursor_CXXMethod ||
         kind == CXCursor_Constructor) {
         if (clang_isCursorDefinition(c)) {
-            check_function(c, ctx);
+            check_function(c, ctx, kind == CXCursor_Constructor);
         }
     }
 
@@ -376,7 +385,8 @@ std::vector<Violation> check_file(
         violations.push_back({
             1, "max-classes-per-file",
             "file has " + std::to_string(ctx.class_count) +
-                " classes (max " + std::to_string(cfg.max_classes_per_file) + ")",
+                " classes (max " + std::to_string(cfg.max_classes_per_file) +
+                "); move each class to its own file",
             "error"
         });
     }

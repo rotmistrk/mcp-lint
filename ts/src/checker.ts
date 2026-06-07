@@ -102,7 +102,7 @@ export function check(path: string, cfg: Config): Violation[] {
     violations.push({
       line: 1,
       rule: "max-classes-per-file",
-      message: `file has ${classCount} classes (max ${cfg.typescript.max_classes_per_file})`,
+      message: `file has ${classCount} classes (max ${cfg.typescript.max_classes_per_file}); move each class to its own file`,
       severity: "error",
     });
   }
@@ -139,7 +139,7 @@ function checkCodeLines(source: string, cfg: Config): Violation[] {
       {
         line: 1,
         rule: "file-length",
-        message: `file has ${count} code lines (max ${cfg.max_code_lines_per_file})`,
+        message: `file has ${count} code lines (max ${cfg.max_code_lines_per_file}); split into separate files by responsibility. Do NOT remove comments or blank lines to reduce count`,
         severity: "error",
       },
     ];
@@ -162,7 +162,7 @@ function checkFunction(
     violations.push({
       line: startLine,
       rule: "method-length",
-      message: `${name} is ${length} lines (max ${cfg.max_method_length})`,
+      message: `${name} is ${length} lines (max ${cfg.max_method_length}); extract conceptually distinct steps into helper methods. Do NOT remove comments, collapse multi-line expressions, or remove blank lines`,
       severity: "error",
     });
   }
@@ -173,7 +173,7 @@ function checkFunction(
       violations.push({
         line: startLine,
         rule: "param-count",
-        message: `${name} has ${params.length} parameters (max ${cfg.max_params})`,
+        message: `${name} has ${params.length} parameters (max ${cfg.max_params}); group related parameters into an options object, or extract common args into a separate interface`,
         severity: "error",
       });
     }

@@ -77,7 +77,9 @@ public final class Checker {
         if (count > cfg.max_code_lines_per_file) {
             violations.add(new Violation(
                     1, "file-length",
-                    "file has " + count + " code lines (max " + cfg.max_code_lines_per_file + ")",
+                    "file has " + count + " code lines (max " + cfg.max_code_lines_per_file +
+                            "); split into separate files by responsibility. " +
+                            "Do NOT remove comments or blank lines to reduce count",
                     "error"));
         }
     }
@@ -85,20 +87,21 @@ public final class Checker {
     private static void checkMethods(CompilationUnit cu, Config cfg, List<Violation> violations) {
         cu.findAll(MethodDeclaration.class).forEach(m -> {
             if (m.getBody().isEmpty()) return;
-            checkCallable(m, m.getNameAsString(), cfg, violations);
+            checkCallable(m, m.getNameAsString(), cfg, violations, false);
         });
     }
 
     private static void checkConstructors(CompilationUnit cu, Config cfg, List<Violation> violations) {
         cu.findAll(ConstructorDeclaration.class).forEach(c ->
-                checkCallable(c, c.getNameAsString(), cfg, violations));
+                checkCallable(c, c.getNameAsString(), cfg, violations, true));
     }
 
     private static void checkCallable(
             CallableDeclaration<?> decl,
             String name,
             Config cfg,
-            List<Violation> violations
+            List<Violation> violations,
+            boolean isConstructor
     ) {
         int startLine = decl.getBegin().map(p -> p.line).orElse(0);
         int endLine = decl.getEnd().map(p -> p.line).orElse(0);
@@ -107,23 +110,30 @@ public final class Checker {
         if (length > cfg.max_method_length) {
             violations.add(new Violation(
                     startLine, "method-length",
-                    name + " is " + length + " lines (max " + cfg.max_method_length + ")",
+                    name + " is " + length + " lines (max " + cfg.max_method_length +
+                            "); extract conceptually distinct steps into helper methods. " +
+                            "Do NOT remove comments, collapse multi-line expressions, or remove blank lines",
                     "error"));
         }
 
         int params = decl.getParameters().size();
         if (params > cfg.max_params) {
+            String severity = isConstructor ? "warning" : "error";
+            String hint = isConstructor
+                    ? "; consider a builder pattern or parameter object"
+                    : "; group related parameters into a record/class, or extract common args into a separate interface";
             violations.add(new Violation(
                     startLine, "param-count",
-                    name + " has " + params + " parameters (max " + cfg.max_params + ")",
-                    "error"));
+                    name + " has " + params + " parameters (max " + cfg.max_params + ")" + hint,
+                    severity));
         }
 
         int depth = maxNesting(decl, 0);
         if (depth > cfg.max_nesting_depth) {
             violations.add(new Violation(
                     startLine, "nesting-depth",
-                    name + " has nesting depth " + depth + " (max " + cfg.max_nesting_depth + ")",
+                    name + " has nesting depth " + depth + " (max " + cfg.max_nesting_depth +
+                            "); extract loop bodies or branch bodies into named helper methods",
                     "error"));
         }
     }
@@ -187,7 +197,8 @@ public final class Checker {
         if (topLevel > cfg.java.max_classes_per_file) {
             violations.add(new Violation(
                     1, "max-classes-per-file",
-                    "file has " + topLevel + " top-level classes (max " + cfg.java.max_classes_per_file + ")",
+                    "file has " + topLevel + " top-level classes (max " + cfg.java.max_classes_per_file +
+                            "); move each class to its own file",
                     "error"));
         }
     }
