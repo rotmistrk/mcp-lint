@@ -104,6 +104,29 @@ fn has_method_call(expr: &Expr) -> bool {
     }
 }
 
+/// Counts the depth of consecutive named field accesses (not through method calls).
+fn field_chain_depth(expr: &Expr) -> usize {
+    match expr {
+        Expr::Field(f) => {
+            if let syn::Member::Named(_) = &f.member {
+                1 + field_chain_depth(&f.base)
+            } else {
+                0
+            }
+        }
+        _ => 0,
+    }
+}
+
+/// Total depth of a field expression chain (including itself).
+fn total_field_depth(node: &ExprField) -> usize {
+    if let syn::Member::Named(_) = &node.member {
+        1 + field_chain_depth(&node.base)
+    } else {
+        0
+    }
+}
+
 struct RustVisitor<'a> {
     cfg: &'a Config,
     is_test: bool,
@@ -229,7 +252,6 @@ impl<'a> Visit<'a> for RustVisitor<'a> {
 
     fn visit_expr_field(&mut self, node: &'a ExprField) {
         if self.cfg.rust.forbid_field_on_method {
-            // Check if member is a named field (not numeric tuple access)
             if let syn::Member::Named(ident) = &node.member {
                 if has_method_call(&node.base) {
                     let line = ident.span().start().line;
@@ -242,6 +264,23 @@ impl<'a> Visit<'a> for RustVisitor<'a> {
                         ),
                         severity: "error".into(),
                     });
+                } else {
+                    // Check deep field chains — only at the outermost node
+                    let depth = total_field_depth(node);
+                    if depth >= 3 {
+                        let line = ident.span().start().line;
+                        self.violations.push(Violation {
+                            line,
+                            rule: "no-deep-field-access".into(),
+                            message: format!(
+                                "field chain depth {} breaks encapsulation; add a method to an intermediate type",
+                                depth
+                            ),
+                            severity: "error".into(),
+                        });
+                        // Don't recurse into field children — avoid duplicate reports
+                        return;
+                    }
                 }
             }
         }
