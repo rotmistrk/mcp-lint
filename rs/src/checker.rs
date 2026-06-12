@@ -1,6 +1,6 @@
 use syn::visit::Visit;
 use syn::spanned::Spanned;
-use syn::{self, Expr, ExprMethodCall, ExprMacro, ImplItemFn, ItemFn, ItemStruct, Stmt, Visibility};
+use syn::{self, Expr, ExprField, ExprMethodCall, ExprMacro, ImplItemFn, ItemFn, ItemStruct, Stmt, Visibility};
 
 use crate::types::{Config, Violation};
 
@@ -91,6 +91,16 @@ fn check_code_lines(source: &str, cfg: &Config) -> Vec<Violation> {
         }]
     } else {
         Vec::new()
+    }
+}
+
+/// Returns true if the expression is or contains a method call in its access chain.
+fn has_method_call(expr: &Expr) -> bool {
+    match expr {
+        Expr::MethodCall(_) => true,
+        Expr::Field(f) => has_method_call(&f.base),
+        Expr::Paren(p) => has_method_call(&p.expr),
+        _ => false,
     }
 }
 
@@ -215,6 +225,27 @@ impl<'a> Visit<'a> for RustVisitor<'a> {
             }
         }
         syn::visit::visit_item_struct(self, node);
+    }
+
+    fn visit_expr_field(&mut self, node: &'a ExprField) {
+        if self.cfg.rust.forbid_field_on_method {
+            // Check if member is a named field (not numeric tuple access)
+            if let syn::Member::Named(ident) = &node.member {
+                if has_method_call(&node.base) {
+                    let line = ident.span().start().line;
+                    let field_name = ident.to_string();
+                    self.violations.push(Violation {
+                        line,
+                        rule: "no-field-on-method".into(),
+                        message: format!(
+                            ".{field_name}: field access after method call breaks encapsulation; use an accessor method instead"
+                        ),
+                        severity: "error".into(),
+                    });
+                }
+            }
+        }
+        syn::visit::visit_expr_field(self, node);
     }
 }
 

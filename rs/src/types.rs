@@ -41,6 +41,8 @@ pub struct RustConfig {
     pub forbid_pub_fields: bool,
     #[serde(default = "default_true")]
     pub forbid_deep_path: bool,
+    #[serde(default = "default_true")]
+    pub forbid_field_on_method: bool,
     #[serde(default)]
     pub max_structs_per_file: usize,
 }
@@ -53,6 +55,7 @@ impl Default for RustConfig {
             forbid_panic: true,
             forbid_pub_fields: true,
             forbid_deep_path: true,
+            forbid_field_on_method: true,
             max_structs_per_file: 1,
         }
     }

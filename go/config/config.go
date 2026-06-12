@@ -37,10 +37,11 @@ type GoConfig struct {
 
 // RustConfig holds Rust-specific settings.
 type RustConfig struct {
-	ForbidUnwrap   bool `yaml:"forbid_unwrap"`
-	ForbidExpect   bool `yaml:"forbid_expect"`
-	ForbidPanic    bool `yaml:"forbid_panic"`
-	ForbidDeepPath bool `yaml:"forbid_deep_path"`
+	ForbidUnwrap        bool `yaml:"forbid_unwrap"`
+	ForbidExpect        bool `yaml:"forbid_expect"`
+	ForbidPanic         bool `yaml:"forbid_panic"`
+	ForbidDeepPath      bool `yaml:"forbid_deep_path"`
+	ForbidFieldOnMethod bool `yaml:"forbid_field_on_method"`
 }
 
 // TypeScriptConfig holds TypeScript-specific settings.
@@ -81,7 +82,7 @@ func Defaults() *Config {
 		MaxConsecutiveSameType: 2,
 		MaxCodeLinesPerFile:    240,
 		Go:         GoConfig{ForbidPanic: true, ForbidTypeAssertions: true, ForbidExportedFields: true, ForbidSwallowedErrors: true, ForbidConcreteDeps: true, MaxTypesPerFile: 1},
-		Rust:       RustConfig{ForbidUnwrap: true, ForbidExpect: true, ForbidPanic: true, ForbidDeepPath: true},
+		Rust:       RustConfig{ForbidUnwrap: true, ForbidExpect: true, ForbidPanic: true, ForbidDeepPath: true, ForbidFieldOnMethod: true},
 		TypeScript: TypeScriptConfig{ForbidAny: true, ForbidClassComponents: true, ForbidWaitForTimeout: true, ForbidEmptyCatch: true, ForbidDeepAccess: true, ForbidMutableGetters: true},
 		Cpp:        CppConfig{ForbidRawNew: true, ForbidCCasts: true, ForbidEmptyCatch: true, ForbidDeepQualified: true, ForbidMutableGetters: true},
 		Java:       JavaConfig{ForbidRawTypes: true, ForbidPublicFields: true, ForbidDeepAccess: true, ForbidConcreteDeps: true, ForbidMutableGetters: true},
