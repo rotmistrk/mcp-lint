@@ -42,16 +42,18 @@ type RustConfig struct {
 	ForbidPanic         bool `yaml:"forbid_panic"`
 	ForbidDeepPath      bool `yaml:"forbid_deep_path"`
 	ForbidFieldOnMethod bool `yaml:"forbid_field_on_method"`
+	ForbidMidChainTry   bool `yaml:"forbid_mid_chain_try"`
 }
 
 // TypeScriptConfig holds TypeScript-specific settings.
 type TypeScriptConfig struct {
-	ForbidAny             bool `yaml:"forbid_any"`
-	ForbidClassComponents bool `yaml:"forbid_class_components"`
-	ForbidWaitForTimeout  bool `yaml:"forbid_wait_for_timeout"`
-	ForbidEmptyCatch      bool `yaml:"forbid_empty_catch"`
-	ForbidDeepAccess      bool `yaml:"forbid_deep_access"`
-	ForbidMutableGetters  bool `yaml:"forbid_mutable_getters"`
+	ForbidAny              bool `yaml:"forbid_any"`
+	ForbidClassComponents  bool `yaml:"forbid_class_components"`
+	ForbidWaitForTimeout   bool `yaml:"forbid_wait_for_timeout"`
+	ForbidEmptyCatch       bool `yaml:"forbid_empty_catch"`
+	ForbidDeepAccess       bool `yaml:"forbid_deep_access"`
+	ForbidMutableGetters   bool `yaml:"forbid_mutable_getters"`
+	ForbidMidChainOptional bool `yaml:"forbid_mid_chain_optional"`
 }
 
 // CppConfig holds C++-specific settings.
@@ -82,8 +84,8 @@ func Defaults() *Config {
 		MaxConsecutiveSameType: 2,
 		MaxCodeLinesPerFile:    240,
 		Go:         GoConfig{ForbidPanic: true, ForbidTypeAssertions: true, ForbidExportedFields: true, ForbidSwallowedErrors: true, ForbidConcreteDeps: true, MaxTypesPerFile: 1},
-		Rust:       RustConfig{ForbidUnwrap: true, ForbidExpect: true, ForbidPanic: true, ForbidDeepPath: true, ForbidFieldOnMethod: true},
-		TypeScript: TypeScriptConfig{ForbidAny: true, ForbidClassComponents: true, ForbidWaitForTimeout: true, ForbidEmptyCatch: true, ForbidDeepAccess: true, ForbidMutableGetters: true},
+		Rust:       RustConfig{ForbidUnwrap: true, ForbidExpect: true, ForbidPanic: true, ForbidDeepPath: true, ForbidFieldOnMethod: true, ForbidMidChainTry: true},
+		TypeScript: TypeScriptConfig{ForbidAny: true, ForbidClassComponents: true, ForbidWaitForTimeout: true, ForbidEmptyCatch: true, ForbidDeepAccess: true, ForbidMutableGetters: true, ForbidMidChainOptional: true},
 		Cpp:        CppConfig{ForbidRawNew: true, ForbidCCasts: true, ForbidEmptyCatch: true, ForbidDeepQualified: true, ForbidMutableGetters: true},
 		Java:       JavaConfig{ForbidRawTypes: true, ForbidPublicFields: true, ForbidDeepAccess: true, ForbidConcreteDeps: true, ForbidMutableGetters: true},
 	}

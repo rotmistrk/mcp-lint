@@ -104,6 +104,15 @@ fn has_method_call(expr: &Expr) -> bool {
     }
 }
 
+/// Returns true if the immediate receiver of this call is a `?` (try) expression.
+fn contains_try(expr: &Expr) -> bool {
+    match expr {
+        Expr::Try(_) => true,
+        Expr::Paren(p) => contains_try(&p.expr),
+        _ => false,
+    }
+}
+
 /// Counts the depth of consecutive named field accesses (not through method calls).
 fn field_chain_depth(expr: &Expr) -> usize {
     match expr {
@@ -218,6 +227,22 @@ impl<'a> Visit<'a> for RustVisitor<'a> {
         let params = node.sig.inputs.len();
         self.check_fn(&name, start, params, &node.block, name == "new");
         syn::visit::visit_impl_item_fn(self, node);
+    }
+
+    fn visit_expr_method_call(&mut self, node: &'a ExprMethodCall) {
+        if self.cfg.rust.forbid_mid_chain_try {
+            if contains_try(&node.receiver) {
+                let line = node.method.span().start().line;
+                self.violations.push(Violation {
+                    line,
+                    rule: "no-mid-chain-try".into(),
+                    message: "? in middle of chain hides error origin; handle the error before continuing the chain".into(),
+                    severity: "error".into(),
+                });
+            }
+        }
+        // Check unwrap/expect (existing logic is in UnwrapFinder)
+        syn::visit::visit_expr_method_call(self, node);
     }
 
     fn visit_item_struct(&mut self, node: &'a ItemStruct) {

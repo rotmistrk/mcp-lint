@@ -20,6 +20,7 @@ export interface Config {
     forbid_empty_catch: boolean;
     forbid_deep_access: boolean;
     forbid_mutable_getters: boolean;
+    forbid_mid_chain_optional: boolean;
     max_classes_per_file: number;
   };
 }
@@ -39,6 +40,7 @@ export const defaults: Config = {
     forbid_empty_catch: true,
     forbid_deep_access: true,
     forbid_mutable_getters: true,
+    forbid_mid_chain_optional: true,
     max_classes_per_file: 1,
   },
 };

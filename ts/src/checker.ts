@@ -90,6 +90,33 @@ export function check(path: string, cfg: Config): Violation[] {
       }
     }
 
+    if (cfg.typescript.forbid_mid_chain_optional) {
+      // Detect ?. that is not at the end of an access chain
+      if (
+        (ts.isPropertyAccessExpression(node) || ts.isCallExpression(node)) &&
+        "questionDotToken" in node &&
+        (node as ts.PropertyAccessExpression | ts.CallExpression)
+          .questionDotToken
+      ) {
+        // Check if this node is itself the expression of another access/call
+        const parent = node.parent;
+        if (
+          parent &&
+          (ts.isPropertyAccessExpression(parent) ||
+            ts.isCallExpression(parent) ||
+            ts.isElementAccessExpression(parent))
+        ) {
+          violations.push({
+            line: getLine(node, sourceFile),
+            rule: "no-mid-chain-optional",
+            message:
+              "?. in middle of chain hides nullability; handle null before continuing the chain",
+            severity: "error",
+          });
+        }
+      }
+    }
+
     ts.forEachChild(node, visit);
   };
 
