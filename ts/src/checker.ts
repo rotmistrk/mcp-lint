@@ -110,7 +110,7 @@ export function check(path: string, cfg: Config): Violation[] {
             line: getLine(node, sourceFile),
             rule: "no-mid-chain-optional",
             message:
-              "?. in middle of chain hides nullability; handle null before continuing the chain",
+              "?. in middle of chain hides nullability; add an explicit null check or guard clause before continuing",
             severity: "error",
           });
         }
